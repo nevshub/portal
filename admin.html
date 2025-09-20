@@ -1,198 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Control</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Admin Control</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Admin Control Panel</h1>
+<h1>Admin Control Panel</h1>
 
-  <!-- Power: What’s In Progress Button -->
-  <button class="button" onclick="showInProgress()">What's In Progress</button>
+<!-- Power: What’s In Progress Button -->
+<button class="button" onclick="showInProgress()">What's In Progress</button>
 
-  <div style="margin-top:20px;">
-    <!-- Armin: Placeholder Admin Buttons -->
-    <a href="#" class="button">Admin Logins</a>
-    <a href="#" class="button">Guest Section</a>
-    <a href="#" class="button">Donation Settings</a>
-    <a href="#" class="button">Music Player</a>
-    <a href="index.html" class="button">Back to Homepage</a>
-  </div>
+<div style="margin-top:20px;">
+  <!-- Armin: Placeholder Admin Buttons -->
+  <a href="#" class="button">Admin Logins</a>
+  <a href="#" class="button">Guest Section</a>
+  <a href="#" class="button">Donation Settings</a>
+  <a href="#" class="button">Music Player</a>
+  <a href="index.html" class="button">Back to Homepage</a>
+</div>
 
-  <!-- Himeno: Customization Panel -->
-  <h2>Customize Admin Panel</h2>
-  <div>
-    <label>Background Color: <input type="color" id="bgColor"></label><br>
-    <label>Button Color: <input type="color" id="btnColor"></label><br>
-    <label>Font: 
-      <select id="fontSelect">
-        <option value="Arial, sans-serif">Arial</option>
-        <option value="'Courier New', monospace">Courier New</option>
-        <option value="'Times New Roman', serif">Times New Roman</option>
-        <option value="'Verdana', sans-serif">Verdana</option>
-      </select>
-    </label><br>
-    <button class="button" id="saveSettings">Save Settings</button>
-  </div>
+<!-- Himeno: Customization Panel -->
+<h2>Customize Admin Panel</h2>
+<div>
+  <label>Background Color: <input type="color" id="bgColor"></label><br>
+  <label>Button Color: <input type="color" id="btnColor"></label><br>
+  <label>Font: 
+    <select id="fontSelect">
+      <option value="Arial, sans-serif">Arial</option>
+      <option value="'Courier New', monospace">Courier New</option>
+      <option value="'Times New Roman', serif">Times New Roman</option>
+      <option value="'Verdana', sans-serif">Verdana</option>
+    </select>
+  </label><br>
+  <button class="button" id="saveSettings">Save Settings</button>
+</div>
 
-  <!-- Power & Armin: Music Player -->
-  <h2>Music Player</h2>
-  <input type="file" id="musicFiles" multiple accept="audio/*"><br>
-  <ul id="trackList"></ul>
-  <audio id="track" controls></audio>
+<!-- Power & Armin: Music Player -->
+<h2>Music Player</h2>
+<input type="file" id="musicFiles" multiple accept="audio/*"><br>
+<ul id="trackList"></ul>
+<audio id="track" controls></audio>
 
-  <!-- Grove Notes: Fat Daddy Notes & Chunk Numbers -->
-  <!-- Mikasa: Section 1 – Notes Tracking -->
-  <!--
-    [FDN-001] Girls are keeping Father entertained, boys are getting lit
-    [FDN-002] Chunk 1: What’s In Progress Button
-    [FDN-003] Chunk 2: Admin placeholder buttons
-    [FDN-004] Chunk 3: Customization panel
-    [FDN-005] Chunk 4: Music player multi-file queue
-    [FDN-006] Chunk 5: Save settings localStorage
-    [FDN-007] Chunk 6: Beat-synced visualizer
-    [FDN-008] Chunk 7: Download & delete controls
-    [FDN-009] Chunk 8: Updated "What's In Progress" alert text
-  -->
+<script>
+  // Yūrei: What's In Progress Popup (updated, professional)
+  function showInProgress() {
+    alert(
+      "Admin-Only Features In Progress:\n\n" +
+      "- Secure admin logins with idea management box\n" +
+      "- Guest section for visitors\n" +
+      "- Homepage enhancements and layout customization\n" +
+      "- Donation button integration\n" +
+      "- Music player with local file queue (currently device-specific; server-side persistence to follow)\n" +
+      "- Future experimental features and Merge Scripts\n\n" +
+      "Note on Website Domain:\n" +
+      "The official and fully customizable name of your website is referred to as a 'domain.' " +
+      "Domains are typically acquired through annual registration, with costs ranging from approximately $10 to $15 per year. " +
+      "The administration team will handle the purchase and management of the domain on your behalf.\n\n" +
+      "Testing & Deployment Protocol:\n" +
+      "All changes will first be applied to a cloned version of the site to ensure stability and prevent errors before updating the live website."
+    );
+  }
 
-  <script>
-    // Yūrei: What's In Progress Popup (updated)
-    function showInProgress() {
-      alert(
-        "Admin-Only Features In Progress:\n\n" +
-        "- Admin logins & idea box\n" +
-        "- Guest section\n" +
-        "- Homepage enhancements\n" +
-        "- Donation button\n" +
-        "- Music player (currently saves locally on your device)\n" +
-        "- Future experiment spaces & Merge Scripts\n\n" +
-        "Note: All changes will be tested on a clone copy of Nev's site before appearing on her live site, to avoid bugs or errors."
-      );
+  // Himeno: Customization JS
+  const bgColorInput = document.getElementById('bgColor');
+  const btnColorInput = document.getElementById('btnColor');
+  const fontSelect = document.getElementById('fontSelect');
+  const saveSettingsBtn = document.getElementById('saveSettings');
+
+  window.onload = () => {
+    if(localStorage.bgColor) document.body.style.backgroundColor = localStorage.bgColor;
+    if(localStorage.btnColor) updateButtonColor(localStorage.btnColor);
+    if(localStorage.font) document.body.style.fontFamily = localStorage.font;
+
+    bgColorInput.value = localStorage.bgColor || "#111111";
+    btnColorInput.value = localStorage.btnColor || "#ff6600";
+    fontSelect.value = localStorage.font || "Arial, sans-serif";
+
+    // Load music queue from localStorage
+    const saved = localStorage.getItem('musicQueue');
+    if(saved){
+      queue = JSON.parse(saved);
+      renderQueue();
     }
+  }
 
-    // Himeno: Customization JS
-    const bgColorInput = document.getElementById('bgColor');
-    const btnColorInput = document.getElementById('btnColor');
-    const fontSelect = document.getElementById('fontSelect');
-    const saveSettingsBtn = document.getElementById('saveSettings');
+  function updateButtonColor(color){
+    const buttons = document.querySelectorAll('.button');
+    buttons.forEach(btn => btn.style.backgroundColor = color);
+  }
 
-    window.onload = () => {
-      if(localStorage.bgColor) document.body.style.backgroundColor = localStorage.bgColor;
-      if(localStorage.btnColor) updateButtonColor(localStorage.btnColor);
-      if(localStorage.font) document.body.style.fontFamily = localStorage.font;
+  saveSettingsBtn.onclick = () => {
+    const bg = bgColorInput.value;
+    const btn = btnColorInput.value;
+    const font = fontSelect.value;
 
-      bgColorInput.value = localStorage.bgColor || "#111111";
-      btnColorInput.value = localStorage.btnColor || "#ff6600";
-      fontSelect.value = localStorage.font || "Arial, sans-serif";
+    document.body.style.backgroundColor = bg;
+    updateButtonColor(btn);
+    document.body.style.fontFamily = font;
 
-      // Load music queue from localStorage (temporary local-only persistence)
-      const saved = localStorage.getItem('musicQueue');
-      if(saved){
-        queue = JSON.parse(saved);
-        renderQueue();
-      }
+    localStorage.bgColor = bg;
+    localStorage.btnColor = btn;
+    localStorage.font = font;
+
+    alert("Settings Saved!");
+  }
+
+  // Armin & Power: Music Player JS
+  const track = document.getElementById('track');
+  const musicFiles = document.getElementById('musicFiles');
+  const trackList = document.getElementById('trackList');
+  let queue = [];
+
+  musicFiles.onchange = (e) => {
+    for(let file of e.target.files){
+      const url = URL.createObjectURL(file);
+      queue.push({name: file.name, url: url});
+      renderQueue();
     }
+  }
 
-    function updateButtonColor(color){
-      const buttons = document.querySelectorAll('.button');
-      buttons.forEach(btn => btn.style.backgroundColor = color);
+  function renderQueue(){
+    trackList.innerHTML = "";
+    queue.forEach((item, index) => {
+      const li = document.createElement('li');
+      li.textContent = item.name + " ";
+      const playBtn = document.createElement('button');
+      playBtn.textContent = "Play";
+      playBtn.onclick = () => { track.src = item.url; track.play(); };
+      const delBtn = document.createElement('button');
+      delBtn.textContent = "Delete";
+      delBtn.onclick = () => { queue.splice(index, 1); renderQueue(); saveQueue(); };
+      li.appendChild(playBtn);
+      li.appendChild(delBtn);
+      trackList.appendChild(li);
+    });
+    saveQueue();
+  }
+
+  function saveQueue(){
+    localStorage.setItem('musicQueue', JSON.stringify(queue));
+  }
+
+  // Power & Yūrei: Beat-Synced Visualizer
+  const canvas = document.createElement('canvas');
+  canvas.id = "visualizer";
+  canvas.width = 300;
+  canvas.height = 300;
+  canvas.style.marginTop = "20px";
+  document.body.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const analyser = audioCtx.createAnalyser();
+  let source;
+
+  track.onplay = () => {
+    if(!source){
+      source = audioCtx.createMediaElementSource(track);
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      analyser.fftSize = 256;
     }
+    animateVisualizer();
+  };
 
-    saveSettingsBtn.onclick = () => {
-      const bg = bgColorInput.value;
-      const btn = btnColorInput.value;
-      const font = fontSelect.value;
+  function animateVisualizer(){
+    requestAnimationFrame(animateVisualizer);
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    analyser.getByteFrequencyData(dataArray);
 
-      document.body.style.backgroundColor = bg;
-      updateButtonColor(btn);
-      document.body.style.fontFamily = font;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      localStorage.bgColor = bg;
-      localStorage.btnColor = btn;
-      localStorage.font = font;
+    let sum = 0;
+    for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
+    let avg = sum / bufferLength;
 
-      alert("Settings Saved!");
-    }
-
-    // Armin & Power: Music Player JS
-    const track = document.getElementById('track');
-    const musicFiles = document.getElementById('musicFiles');
-    const trackList = document.getElementById('trackList');
-    let queue = [];
-
-    musicFiles.onchange = (e) => {
-      for(let file of e.target.files){
-        const url = URL.createObjectURL(file);
-        queue.push({name: file.name, url: url});
-        renderQueue();
-      }
-    }
-
-    function renderQueue(){
-      trackList.innerHTML = "";
-      queue.forEach((item, index) => {
-        const li = document.createElement('li');
-        li.textContent = item.name + " ";
-        const playBtn = document.createElement('button');
-        playBtn.textContent = "Play";
-        playBtn.onclick = () => { track.src = item.url; track.play(); };
-        const delBtn = document.createElement('button');
-        delBtn.textContent = "Delete";
-        delBtn.onclick = () => { queue.splice(index, 1); renderQueue(); saveQueue(); };
-        li.appendChild(playBtn);
-        li.appendChild(delBtn);
-        trackList.appendChild(li);
-      });
-      saveQueue(); // save after any change
-    }
-
-    function saveQueue(){
-      localStorage.setItem('musicQueue', JSON.stringify(queue));
-    }
-
-    // Power & Yūrei: Beat-Synced Visualizer
-    const canvas = document.createElement('canvas');
-    canvas.id = "visualizer";
-    canvas.width = 300;
-    canvas.height = 300;
-    canvas.style.marginTop = "20px";
-    document.getElementById('music-player')?.appendChild(canvas);
-
-    const ctx = canvas.getContext('2d');
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const analyser = audioCtx.createAnalyser();
-    let source;
-
-    track.onplay = () => {
-      if(!source){
-        source = audioCtx.createMediaElementSource(track);
-        source.connect(analyser);
-        analyser.connect(audioCtx.destination);
-        analyser.fftSize = 256;
-      }
-      animateVisualizer();
-    };
-
-    function animateVisualizer(){
-      requestAnimationFrame(animateVisualizer);
-      const bufferLength = analyser.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-      analyser.getByteFrequencyData(dataArray);
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Circle visualizer pulsing with average volume
-      let sum = 0;
-      for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
-      let avg = sum / bufferLength;
-
-      const radius = 50 + avg / 2; // radius grows with volume
-      ctx.beginPath();
-      ctx.arc(canvas.width/2, canvas.height/2, radius, 0, Math.PI*2);
-      ctx.fillStyle = '#ff6600';
-      ctx.fill();
-    }
-  </script>
+    const radius = 50 + avg / 2;
+    ctx.beginPath();
+    ctx.arc(canvas.width/2, canvas.height/2, radius, 0, Math.PI*2);
+    ctx.fillStyle = '#ff6600';
+    ctx.fill();
+  }
+</script>
 </body>
 </html>
