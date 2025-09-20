@@ -8,11 +8,11 @@
 <body>
   <h1>Admin Control Panel</h1>
 
-  <!-- In Progress Popup -->
+  <!-- Power: What’s In Progress Button -->
   <button class="button" onclick="showInProgress()">What's In Progress</button>
 
-  <!-- Admin-Only Buttons -->
   <div style="margin-top:20px;">
+    <!-- Armin: Placeholder Admin Buttons -->
     <a href="#" class="button">Admin Logins</a>
     <a href="#" class="button">Guest Section</a>
     <a href="#" class="button">Donation Settings</a>
@@ -20,23 +20,42 @@
     <a href="index.html" class="button">Back to Homepage</a>
   </div>
 
-  <!-- Music Player -->
-  <div id="music-player" style="margin-top:40px;">
-    <audio id="track" src="song.mp3"></audio>
-    <canvas id="visualizer" width="300" height="300"></canvas>
-    <div style="margin-top:10px;">
-      <button class="button" onclick="playPause()">Play/Pause</button>
-      <button class="button" onclick="toggleCrossfader()">Crossfader</button>
-      <label>Speed:
-        <input type="range" id="speed" min="0.5" max="2" value="1" step="0.1" onchange="changeSpeed(this.value)">
-      </label>
-      <button class="button" onclick="downloadTrack()">Download</button>
-    </div>
+  <!-- Himeno: Customization Panel -->
+  <h2>Customize Admin Panel</h2>
+  <div>
+    <label>Background Color: <input type="color" id="bgColor"></label><br>
+    <label>Button Color: <input type="color" id="btnColor"></label><br>
+    <label>Font: 
+      <select id="fontSelect">
+        <option value="Arial, sans-serif">Arial</option>
+        <option value="'Courier New', monospace">Courier New</option>
+        <option value="'Times New Roman', serif">Times New Roman</option>
+        <option value="'Verdana', sans-serif">Verdana</option>
+      </select>
+    </label><br>
+    <button class="button" id="saveSettings">Save Settings</button>
   </div>
 
-  <!-- Scripts -->
+  <!-- Power & Armin: Music Player -->
+  <h2>Music Player</h2>
+  <input type="file" id="musicFiles" multiple accept="audio/*"><br>
+  <ul id="trackList"></ul>
+  <audio id="track" controls></audio>
+
+  <!-- Grove Notes: Fat Daddy Notes & Chunk Numbers -->
+  <!-- Mikasa: Section 1 – Notes Tracking -->
+  <!--
+    [FDN-001] Girls are keeping Father entertained, boys are getting lit
+    [FDN-002] Chunk 1: What’s In Progress Button
+    [FDN-003] Chunk 2: Admin placeholder buttons
+    [FDN-004] Chunk 3: Customization panel
+    [FDN-005] Chunk 4: Music player multi-file queue
+    [FDN-006] Chunk 5: Save settings localStorage
+    [FDN-007] Chunk 6: Download & delete controls
+  -->
+
   <script>
-    // In Progress Popup
+    // Yūrei: What's In Progress Popup
     function showInProgress() {
       alert(
         "Admin-Only Features In Progress:\n\n" +
@@ -49,44 +68,73 @@
       );
     }
 
-    // Music Player
+    // Himeno: Customization JS
+    const bgColorInput = document.getElementById('bgColor');
+    const btnColorInput = document.getElementById('btnColor');
+    const fontSelect = document.getElementById('fontSelect');
+    const saveSettingsBtn = document.getElementById('saveSettings');
+
+    window.onload = () => {
+      if(localStorage.bgColor) document.body.style.backgroundColor = localStorage.bgColor;
+      if(localStorage.btnColor) updateButtonColor(localStorage.btnColor);
+      if(localStorage.font) document.body.style.fontFamily = localStorage.font;
+
+      bgColorInput.value = localStorage.bgColor || "#111111";
+      btnColorInput.value = localStorage.btnColor || "#ff6600";
+      fontSelect.value = localStorage.font || "Arial, sans-serif";
+    }
+
+    function updateButtonColor(color){
+      const buttons = document.querySelectorAll('.button');
+      buttons.forEach(btn => btn.style.backgroundColor = color);
+    }
+
+    saveSettingsBtn.onclick = () => {
+      const bg = bgColorInput.value;
+      const btn = btnColorInput.value;
+      const font = fontSelect.value;
+
+      document.body.style.backgroundColor = bg;
+      updateButtonColor(btn);
+      document.body.style.fontFamily = font;
+
+      localStorage.bgColor = bg;
+      localStorage.btnColor = btn;
+      localStorage.font = font;
+
+      alert("Settings Saved!");
+    }
+
+    // Armin & Power: Music Player JS
     const track = document.getElementById('track');
+    const musicFiles = document.getElementById('musicFiles');
+    const trackList = document.getElementById('trackList');
+    let queue = [];
 
-    function playPause() {
-      track.paused ? track.play() : track.pause();
+    musicFiles.onchange = (e) => {
+      for(let file of e.target.files){
+        const url = URL.createObjectURL(file);
+        queue.push({name: file.name, url: url});
+        renderQueue();
+      }
     }
 
-    function toggleCrossfader() {
-      alert("Crossfader toggled (placeholder).");
+    function renderQueue(){
+      trackList.innerHTML = "";
+      queue.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.textContent = item.name + " ";
+        const playBtn = document.createElement('button');
+        playBtn.textContent = "Play";
+        playBtn.onclick = () => { track.src = item.url; track.play(); };
+        const delBtn = document.createElement('button');
+        delBtn.textContent = "Delete";
+        delBtn.onclick = () => { queue.splice(index, 1); renderQueue(); };
+        li.appendChild(playBtn);
+        li.appendChild(delBtn);
+        trackList.appendChild(li);
+      });
     }
-
-    function changeSpeed(val) {
-      track.playbackRate = val;
-    }
-
-    function downloadTrack() {
-      const link = document.createElement('a');
-      link.href = track.src;
-      link.download = track.src.split('/').pop();
-      link.click();
-    }
-
-    // Optional: Simple Visualizer Setup (placeholder animation)
-    const canvas = document.getElementById('visualizer');
-    const ctx = canvas.getContext('2d');
-    let angle = 0;
-
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.beginPath();
-      const radius = 50 + 20 * Math.sin(angle);
-      ctx.arc(150, 150, radius, 0, Math.PI * 2);
-      ctx.fillStyle = '#ff6600';
-      ctx.fill();
-      angle += 0.1;
-      requestAnimationFrame(animate);
-    }
-    animate();
   </script>
 </body>
 </html>
