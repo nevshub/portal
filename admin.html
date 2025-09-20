@@ -51,11 +51,13 @@
     [FDN-004] Chunk 3: Customization panel
     [FDN-005] Chunk 4: Music player multi-file queue
     [FDN-006] Chunk 5: Save settings localStorage
-    [FDN-007] Chunk 6: Download & delete controls
+    [FDN-007] Chunk 6: Beat-synced visualizer
+    [FDN-008] Chunk 7: Download & delete controls
+    [FDN-009] Chunk 8: Updated "What's In Progress" alert text
   -->
 
   <script>
-    // Yūrei: What's In Progress Popup
+    // Yūrei: What's In Progress Popup (updated)
     function showInProgress() {
       alert(
         "Admin-Only Features In Progress:\n\n" +
@@ -63,8 +65,9 @@
         "- Guest section\n" +
         "- Homepage enhancements\n" +
         "- Donation button\n" +
-        "- Music player with visualizer\n" +
-        "- Future experiment spaces & Merge Scripts"
+        "- Music player (currently saves locally on your device)\n" +
+        "- Future experiment spaces & Merge Scripts\n\n" +
+        "Note: All changes will be tested on a clone copy of Nev's site before appearing on her live site, to avoid bugs or errors."
       );
     }
 
@@ -82,6 +85,13 @@
       bgColorInput.value = localStorage.bgColor || "#111111";
       btnColorInput.value = localStorage.btnColor || "#ff6600";
       fontSelect.value = localStorage.font || "Arial, sans-serif";
+
+      // Load music queue from localStorage (temporary local-only persistence)
+      const saved = localStorage.getItem('musicQueue');
+      if(saved){
+        queue = JSON.parse(saved);
+        renderQueue();
+      }
     }
 
     function updateButtonColor(color){
@@ -129,11 +139,59 @@
         playBtn.onclick = () => { track.src = item.url; track.play(); };
         const delBtn = document.createElement('button');
         delBtn.textContent = "Delete";
-        delBtn.onclick = () => { queue.splice(index, 1); renderQueue(); };
+        delBtn.onclick = () => { queue.splice(index, 1); renderQueue(); saveQueue(); };
         li.appendChild(playBtn);
         li.appendChild(delBtn);
         trackList.appendChild(li);
       });
+      saveQueue(); // save after any change
+    }
+
+    function saveQueue(){
+      localStorage.setItem('musicQueue', JSON.stringify(queue));
+    }
+
+    // Power & Yūrei: Beat-Synced Visualizer
+    const canvas = document.createElement('canvas');
+    canvas.id = "visualizer";
+    canvas.width = 300;
+    canvas.height = 300;
+    canvas.style.marginTop = "20px";
+    document.getElementById('music-player')?.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioCtx.createAnalyser();
+    let source;
+
+    track.onplay = () => {
+      if(!source){
+        source = audioCtx.createMediaElementSource(track);
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        analyser.fftSize = 256;
+      }
+      animateVisualizer();
+    };
+
+    function animateVisualizer(){
+      requestAnimationFrame(animateVisualizer);
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyser.getByteFrequencyData(dataArray);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Circle visualizer pulsing with average volume
+      let sum = 0;
+      for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
+      let avg = sum / bufferLength;
+
+      const radius = 50 + avg / 2; // radius grows with volume
+      ctx.beginPath();
+      ctx.arc(canvas.width/2, canvas.height/2, radius, 0, Math.PI*2);
+      ctx.fillStyle = '#ff6600';
+      ctx.fill();
     }
   </script>
 </body>
