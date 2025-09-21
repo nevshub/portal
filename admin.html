@@ -19,6 +19,7 @@
   <canvas id="visualizer"></canvas>
 
   <!-- Customization Panel -->
+  <!-- Customization Panel -->
   <div id="customization">
     <h2>Customization</h2>
     <label>
@@ -39,8 +40,17 @@
     </label>
   </div>
 
-  <a href="index.html">Back to Home</a>
+  <!-- Donation Section -->
+  <div id="donationSection" style="margin-top:30px;">
+    <h2>Donation Settings</h2>
+    <p>Click below to donate via Cash App.</p>
+    <button id="donateButton" class="button"
+            onclick="window.open('https://cash.app/$YourCashtag', '_blank')">
+      Donate Now
+    </button>
+  </div>
 
+  <a href="index.html">Back to Home</a>
   <script>
     const audio = document.getElementById("audio");
     const fileInput = document.getElementById("fileInput");
