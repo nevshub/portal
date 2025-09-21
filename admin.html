@@ -50,6 +50,7 @@
   </div>
 
   <a href="index.html">Back to Home</a>
+
   <script>
     const audio = document.getElementById("audio");
     const fileInput = document.getElementById("fileInput");
@@ -86,37 +87,49 @@
         source = audioCtx.createMediaElementSource(audio);
         source.connect(analyser);
         analyser.connect(audioCtx.destination);
-        analyser.fftSize = 256;
+        analyser.fftSize = 512;
         dataArray = new Uint8Array(analyser.frequencyBinCount);
       }
     }
 
-    // Visualizer loop
+    // Circular visualizer reacting to bass and hi-hats
     function draw() {
       requestAnimationFrame(draw);
       if (!analyser) return;
 
       analyser.getByteFrequencyData(dataArray);
 
+      // Colors
       const bgColor = document.getElementById("bgColor").value;
       const barColor = document.getElementById("barColor").value;
-      const barWidth = document.getElementById("barWidth").value;
-      const sensitivity = document.getElementById("sensitivity").value;
 
+      // Clear canvas
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      const barCount = dataArray.length;
-      const barHeightScale = canvas.height / sensitivity;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = 80;
+      const totalBars = 60;
 
-      for (let i = 0; i < barCount; i++) {
-        const value = dataArray[i];
-        const barHeight = value * barHeightScale;
-        const x = i * (parseInt(barWidth) + 1);
+      ctx.save();
+      ctx.translate(centerX, centerY);
 
+      for (let i = 0; i < totalBars; i++) {
+        const bassIndex = Math.floor(i * 2); // bass bins
+        const hiHatIndex = dataArray.length - totalBars + i; // hi-hat bins
+        const value = (dataArray[bassIndex] + dataArray[hiHatIndex]) / 2;
+
+        const barLength = value * 0.8;
+        const angle = (i / totalBars) * 2 * Math.PI;
+
+        ctx.rotate(angle);
         ctx.fillStyle = barColor;
-        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+        ctx.fillRect(radius, -2, barLength, 4);
+        ctx.rotate(-angle);
       }
+
+      ctx.restore();
     }
 
     draw();
