@@ -82,12 +82,13 @@
     const ctx = canvas.getContext("2d");
 
     canvas.width = window.innerWidth;
-    canvas.height = 300;
+    canvas.height = 400;
 
     let audioCtx, analyser, source, dataArray;
     const smoothedValues = [];
+    let beatLevel = 0;
+    let rotationAngle = 0;
 
-    // Handle file selection
     fileInput.addEventListener("change", () => {
       playlist.innerHTML = "";
       Array.from(fileInput.files).forEach((file, index) => {
@@ -113,7 +114,6 @@
         analyser.connect(audioCtx.destination);
         analyser.fftSize = 512;
         dataArray = new Uint8Array(analyser.frequencyBinCount);
-
         for (let i = 0; i < analyser.frequencyBinCount; i++) smoothedValues[i] = 0;
       }
     }
@@ -128,22 +128,31 @@
       const barWidth = document.getElementById("barWidth").value;
       const sensitivity = document.getElementById("sensitivity").value;
 
-      // Smooth each bar
+      // Fade effect for trail (semi-transparent overlay)
+      ctx.fillStyle = bgColor + 'DD'; // DD = alpha for trail persistence
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Smooth values
       for (let i = 0; i < dataArray.length; i++) {
         smoothedValues[i] += (dataArray[i] - smoothedValues[i]) * 0.1;
       }
 
-      // Clear canvas
-      ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Beat level for rotation and glow
+      let bassSum = 0;
+      const bassCount = Math.floor(dataArray.length / 10);
+      for (let i = 0; i < bassCount; i++) bassSum += smoothedValues[i];
+      beatLevel = bassSum / bassCount / 255;
+
+      rotationAngle += 0.01 + beatLevel * 0.05;
 
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
-      const baseRadius = 80;
+      const baseRadius = 80 + beatLevel * 50;
       const totalBars = 60;
 
       ctx.save();
       ctx.translate(centerX, centerY);
+      ctx.rotate(rotationAngle);
 
       for (let i = 0; i < totalBars; i++) {
         const bassIndex = Math.floor(i * 2);
@@ -152,13 +161,12 @@
         const barLength = value * (sensitivity / 64);
         const angle = (i / totalBars) * 2 * Math.PI;
 
-        // Dynamic color based on intensity
-        const hue = Math.min(60 + value, 360); // shifts from yellow to red
+        const hue = (60 + value + rotationAngle*50) % 360;
         ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+        ctx.shadowBlur = 15 + beatLevel * 20;
+        ctx.shadowColor = ctx.fillStyle;
 
         ctx.rotate(angle);
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = ctx.fillStyle;
         ctx.fillRect(baseRadius, -barWidth/2, barLength, barWidth);
         ctx.rotate(-angle);
       }
