@@ -1,5 +1,5 @@
-/* Global styles for Nev's Website */
-
+/* ==================== CHUNK 1: Global Styles ==================== */
+/* Mikasa: Ensures consistent layout and font across all pages */
 body {
   margin: 0;
   padding: 0;
@@ -8,48 +8,94 @@ body {
   font-family: Arial, sans-serif;
   text-align: center;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
 }
+a {
+  color: #ff6600;
+  text-decoration: none;
+}
+.button {
+  background-color: #ff6600;
+  border: none;
+  padding: 10px 20px;
+  color: #fff;
+  cursor: pointer;
+  margin: 5px;
+  border-radius: 5px;
+}
+.button:hover {
+  opacity: 0.8;
+}
+/* FAT NOTE: End of CHUNK 1. Next chunk goes below */
 
+[leave one line of space here]
+
+/* ==================== CHUNK 2: Homepage Styles ==================== */
+/* Himeno: Styles specific to index.html */
 h1 {
-  margin-bottom: 20px;
   font-size: 2.5em;
+  margin-bottom: 20px;
 }
-
 p {
   max-width: 600px;
   line-height: 1.6;
+  margin: 0 auto 20px;
 }
+/* FAT NOTE: End of CHUNK 2. Next chunk goes below */
 
-a {
-  color: #ff6600;
-  margin-top: 20px;
-  display: inline-block;
-  text-decoration: none;
-}
+[leave one line of space here]
 
-a:hover {
-  color: #ff8533;
+/* ==================== CHUNK 3: Admin Panel Styles ==================== */
+/* Power: Styles for admin.html customization panel and music player */
+#trackList {
+  list-style-type: none;
+  padding: 0;
 }
+#trackList li {
+  margin: 5px 0;
+}
+input[type="color"], select {
+  margin: 5px 0 10px;
+  padding: 5px;
+}
+/* FAT NOTE: End of CHUNK 3. Next chunk goes below */
 
-/* Button class */
-.button {
-  display: inline-block;
-  margin: 10px;
-  background-color: #ff6600;
-  color: #fff;
-  padding: 12px 25px;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.1em;
-  cursor: pointer;
-  text-decoration: none;
-  transition: background 0.3s;
-}
+[leave one line of space here]
 
-.button:hover {
-  background-color: #ff8533;
+/* ==================== CHUNK 4: Notes Page Styles ==================== */
+/* Armin: Styles for notes.html readability */
+.notes-section {
+  max-width: 700px;
+  margin: 20px auto;
+  text-align: left;
+  line-height: 1.5;
 }
+/* FAT NOTE: End of CHUNK 4. Next chunk goes below */
+
+[leave one line of space here]
+
+/* ==================== CHUNK 5: Projects Page Styles ==================== */
+/* Yūrei: Styles for projects.html project list and headers */
+ul {
+  padding-left: 20px;
+  text-align: left;
+  max-width: 700px;
+  margin: 0 auto 20px;
+}
+li {
+  margin-bottom: 5px;
+}
+/* FAT NOTE: End of CHUNK 5. Next chunk goes below */
+
+[leave one line of space here]
+
+/* ==================== CHUNK 6: Grove-coded Internal Notes ==================== */
+/* Grove Notes (developer-only):
+   Mikasa: Oversees consistent spacing
+   Power: Tracks interactive elements like buttons and audio
+   Himeno: Notes on color palettes and customization
+   Armin: Reminds about mobile-friendly layouts
+   Yūrei: Guides professional readability and Fat Daddy tips
+*/
+/* FAT NOTE: End of CHUNK 6. Next chunk goes below */
+
+[leave one line of space here]
