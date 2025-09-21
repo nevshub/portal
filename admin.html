@@ -1,128 +1,305 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Admin Control</title>
-<link rel="stylesheet" href="style.css">
+  <!-- CHUNK 1: Head section -->
+  <!-- FAT NOTE: Add meta info, title, and CSS links here -->
+  <meta charset="UTF-8">
+  <title>Admin Control</title>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<h1>Admin Control Panel</h1>
+  <!-- CHUNK 2: Page Title -->
+  <h1>Admin Control Panel</h1>
+  <!-- FAT NOTE: Main title of the admin page -->
 
-<!-- Power: What’s In Progress Button -->
-<button class="button" onclick="showInProgress()">What's In Progress</button>
+  <!-- CHUNK 3: What's In Progress Button -->
+  <button class="button" onclick="showInProgress()">What's In Progress</button>
+  <!-- FAT NOTE: Pops up alert showing in-progress features, domain notes, and testing protocol -->
 
-<div style="margin-top:20px;">
-  <!-- Armin: Placeholder Admin Buttons -->
-  <a href="#" class="button">Admin Logins</a>
-  <a href="#" class="button">Guest Section</a>
-  <a href="#" class="button">Donation Settings</a>
-  <a href="#" class="button">Music Player</a>
-  <a href="index.html" class="button">Back to Homepage</a>
+  <!-- CHUNK 4: Placeholder Admin Buttons -->
+  <div style="margin-top:20px;">
+    <a href="#" class="button">Admin Logins</a>
+    <a href="#" class="button">Guest Section</a>
+    <a href="#" class="button">Donation Settings</a>
+    <a href="#" class="button">Music Player</a>
+    <a href="index.html" class="button">Back to Homepage</a>
+  </div>
+  <!-- FAT NOTE: Update href if filenames change; add new admin buttons here -->
+
+  <!-- CHUNK 5: Customization Panel -->
+  <h2>Customize Admin Panel</h2>
+  <div>
+    <label>Background Color: <input type="color" id="bgColor"></label><br>
+    <label>Button Color: <input type="color" id="btnColor"></label><br>
+    <label>Font: 
+      <select id="fontSelect">
+        <option value="Arial, sans-serif">Arial</option>
+        <option value="'Courier New', monospace">Courier New</option>
+        <option value="'Times New Roman', serif">Times New Roman</option>
+        <option value="'Verdana', sans-serif">Verdana</option>
+      </select>
+    </label><br>
+    <button class="button" id="saveSettings">Save Settings</button>
+  </div>
+  <!-- FAT NOTE: Settings saved to localStorage. All new UI customization goes here. -->
+
+  <!-- CHUNK 6: Music Player Section -->
+  <h2>Music Player</h2>
+  <input type="file" id="musicFiles" multiple accept="audio/*"><br>
+  <ul id="trackList"></ul>
+  <audio id="track" controls></audio>
+  <!-- FAT NOTE: Music files queued here, can be played, deleted, saved to localStorage -->
+
+  <!-- CHUNK 7: JavaScript Section -->
+  <script>
+    // ===== CHUNK 7A: What's In Progress Popup =====
+    function showInProgress() {
+      alert(
+        "Admin-Only Features In Progress:\n\n" +
+        "- Secure admin logins with idea management box\n" +
+        "- Guest section for visitors\n" +
+        "- Homepage enhancements and layout customization\n" +
+        "- Donation button integration\n" +
+        "- Music player with local file queue (device-specific; server persistence coming)\n" +
+        "- Future experimental features and Merge Scripts\n\n" +
+        "Note on Website Domain:\n" +
+        "The official and fully customizable name of your website is referred to as a 'domain.' " +
+        "Domains are acquired annually, $10-$15 typically. Admin will handle purchase.\n\n" +
+        "Testing & Deployment Protocol:\n" +
+        "All changes first tested on a cloned version before updating live site."
+      );
+    }
+
+    // ===== CHUNK 7B: Customization JS =====
+    const bgColorInput = document.getElementById('bgColor');
+    const btnColorInput = document.getElementById('btnColor');
+    const fontSelect = document.getElementById('fontSelect');
+    const saveSettingsBtn = document.getElementById('saveSettings');
+
+    window.onload = () => {
+      if(localStorage.bgColor) document.body.style.backgroundColor = localStorage.bgColor;
+      if(localStorage.btnColor) updateButtonColor(localStorage.btnColor);
+      if(localStorage.font) document.body.style.fontFamily = localStorage.font;
+
+      bgColorInput.value = localStorage.bgColor || "#111111";
+      btnColorInput.value = localStorage.btnColor || "#ff6600";
+      fontSelect.value = localStorage.font || "Arial, sans-serif";
+
+      // Load music queue
+      const saved = localStorage.getItem('musicQueue');
+      if(saved){
+        queue = JSON.parse(saved);
+        renderQueue();
+      }
+    }
+
+    function updateButtonColor(color){
+      const buttons = document.querySelectorAll('.button');
+      buttons.forEach(btn => btn.style.backgroundColor = color);
+    }
+
+    saveSettingsBtn.onclick = () => {
+      const bg = bgColorInput.value;
+      const btn = btnColorInput.value;
+      const font = fontSelect.value;
+
+      document.body.style.backgroundColor = bg;
+      updateButtonColor(btn);
+      document.body.style.fontFamily = font;
+
+      localStorage.bgColor = bg;
+      localStorage.btnColor = btn;
+      localStorage.font = font;
+
+      alert("Settings Saved!");
+    }
+
+    // ===== CHUNK 7C: Music Player JS =====
+    const track = document.getElementById('track');
+    const musicFiles = document.getElementById('musicFiles');
+    const trackList = document.getElementById('trackList');
+    let queue = [];
+
+    musicFiles.onchange = (e) => {
+      for(let file of e.target.files){
+        const url = URL.createObjectURL(file);
+        queue.push({name: file.name, url: url});
+        renderQueue();
+      }
+    }
+
+    function renderQueue(){
+      trackList.innerHTML = "";
+      queue.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.textContent = item.name + " ";
+        const playBtn = document.createElement('button');
+        playBtn.textContent = "Play";
+        playBtn.onclick = () => { track.src = item.url; track.play(); };
+        const delBtn = document.createElement('button');
+        delBtn.textContent = "Delete";
+        delBtn.onclick = () => { queue.splice(index, 1); renderQueue(); saveQueue(); };
+        li.appendChild(playBtn);
+        li.appendChild(delBtn);
+        trackList.appendChild(li);
+      });
+      saveQueue();
+    }
+
+    function saveQueue(){
+      localStorage.setItem('musicQueue', JSON.stringify(queue));
+    }
+
+    // ===== CHUNK 7D: Electric-Style Beat Visualizer =====
+    const canvas = document.createElement('canvas');
+    canvas.id = "visualizer";
+    canvas.width = 300;
+    canvas.height = 300;
+    canvas.style.marginTop = "20px";
+    document.body.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioCtx.createAnalyser();
+    let source;
+
+    track.onplay = () => {
+      if(!source){
+        source = audioCtx.createMediaElementSource(track);
+        source.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        analyser.fftSize = 256;
+      }
+      animateVisualizer();
+    };
+
+    function animateVisualizer(){
+      requestAnimationFrame(animateVisualizer);
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyser.getByteFrequencyData(dataArray);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Electric-style: spikes radiating from center
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const spikes = 60;
+      const maxRadius = 100;
+
+      for(let i = 0; i < spikes; i++){
+        const angle = (i / spikes) * Math.PI * 2;
+        const value = dataArray[i % bufferLength] / 255 * maxRadius;
+        const x = centerX + Math.cos(angle) * value;
+        const y = centerY + Math.sin(angle) * value;
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = '#ff6600';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+  </script>
+
+  <!-- CHUNK 2: Admin Logins & Idea Box -->
+<div id="adminLogins" style="margin-top:30px;">
+  <h2>Admin Logins & Idea Box</h2>
+  <!-- FAT NOTE: This section is for authorized admins only -->
+  
+  <label>Username:
+    <input type="text" id="adminUsername" placeholder="Enter username">
+  </label>
+  <button class="button" onclick="loginAdmin()">Login</button>
+
+  <div id="ideaBox" style="margin-top:15px; display:none;">
+    <h3>Idea Box</h3>
+    <textarea id="adminIdeas" placeholder="Type your ideas here..." rows="5" cols="40"></textarea><br>
+    <button class="button" onclick="saveIdeas()">Save Ideas</button>
+    <p id="ideasSavedMsg" style="color:#0f0; display:none;">Ideas saved!</p>
+  </div>
 </div>
-
-<!-- Himeno: Customization Panel -->
-<h2>Customize Admin Panel</h2>
-<div>
-  <label>Background Color: <input type="color" id="bgColor"></label><br>
-  <label>Button Color: <input type="color" id="btnColor"></label><br>
-  <label>Font: 
-    <select id="fontSelect">
-      <option value="Arial, sans-serif">Arial</option>
-      <option value="'Courier New', monospace">Courier New</option>
-      <option value="'Times New Roman', serif">Times New Roman</option>
-      <option value="'Verdana', sans-serif">Verdana</option>
-    </select>
-  </label><br>
-  <button class="button" id="saveSettings">Save Settings</button>
-</div>
-
-<!-- Power & Armin: Music Player -->
-<h2>Music Player</h2>
-<input type="file" id="musicFiles" multiple accept="audio/*"><br>
-<ul id="trackList"></ul>
-<audio id="track" controls></audio>
 
 <script>
-  // Yūrei: What's In Progress Popup (updated, professional)
-  function showInProgress() {
-    alert(
-      "Admin-Only Features In Progress:\n\n" +
-      "- Secure admin logins with idea management box\n" +
-      "- Guest section for visitors\n" +
-      "- Homepage enhancements and layout customization\n" +
-      "- Donation button integration\n" +
-      "- Music player with local file queue (currently device-specific; server-side persistence to follow)\n" +
-      "- Future experimental features and Merge Scripts\n\n" +
-      "Note on Website Domain:\n" +
-      "The official and fully customizable name of your website is referred to as a 'domain.' " +
-      "Domains are typically acquired through annual registration, with costs ranging from approximately $10 to $15 per year. " +
-      "The administration team will handle the purchase and management of the domain on your behalf.\n\n" +
-      "Testing & Deployment Protocol:\n" +
-      "All changes will first be applied to a cloned version of the site to ensure stability and prevent errors before updating the live website."
-    );
-  }
-
-  // Himeno: Customization JS
-  const bgColorInput = document.getElementById('bgColor');
-  const btnColorInput = document.getElementById('btnColor');
-  const fontSelect = document.getElementById('fontSelect');
-  const saveSettingsBtn = document.getElementById('saveSettings');
-
-  window.onload = () => {
-    if(localStorage.bgColor) document.body.style.backgroundColor = localStorage.bgColor;
-    if(localStorage.btnColor) updateButtonColor(localStorage.btnColor);
-    if(localStorage.font) document.body.style.fontFamily = localStorage.font;
-
-    bgColorInput.value = localStorage.bgColor || "#111111";
-    btnColorInput.value = localStorage.btnColor || "#ff6600";
-    fontSelect.value = localStorage.font || "Arial, sans-serif";
-
-    // Load music queue from localStorage
-    const saved = localStorage.getItem('musicQueue');
-    if(saved){
-      queue = JSON.parse(saved);
-      renderQueue();
+  // Yūrei: Admin login simulation (localStorage for now)
+  function loginAdmin(){
+    const username = document.getElementById('adminUsername').value.trim();
+    if(username){
+      localStorage.setItem('adminUser', username);
+      document.getElementById('ideaBox').style.display = 'block';
+      alert("Welcome, " + username + "! Idea Box activated.");
+    } else {
+      alert("Please enter a username to login.");
     }
   }
 
-  function updateButtonColor(color){
-    const buttons = document.querySelectorAll('.button');
-    buttons.forEach(btn => btn.style.backgroundColor = color);
+  // Himeno: Save ideas in localStorage
+  function saveIdeas(){
+    const ideas = document.getElementById('adminIdeas').value.trim();
+    if(ideas){
+      localStorage.setItem('adminIdeas', ideas);
+      const msg = document.getElementById('ideasSavedMsg');
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 2000);yes please 
+    }
   }
 
-  saveSettingsBtn.onclick = () => {
-    const bg = bgColorInput.value;
-    const btn = btnColorInput.value;
-    const font = fontSelect.value;
+  // Load saved ideas on page load
+  window.addEventListener('load', () => {
+    const savedIdeas = localStorage.getItem('adminIdeas');
+    if(savedIdeas){
+      document.getElementById('adminIdeas').value = savedIdeas;
+      if(localStorage.adminUser){
+        document.getElementById('ideaBox').style.display = 'block';
+      }
+    }
+  });
+</script>
+<!-- FAT NOTE: End of CHUNK 2. New chunks go after this but before </body> -->
 
-    document.body.style.backgroundColor = bg;
-    updateButtonColor(btn);
-    document.body.style.fontFamily = font;
+<!-- CHUNK 3: Guest Section + Donation + Music Player Enhancements -->
+<div id="guestSection" style="margin-top:30px;">
+  <h2>Guest Section</h2>
+  <!-- FAT NOTE: This area is for visitors to view select content -->
+  <p>Welcome guests! This section will host announcements, updates, and curated content for visitors.</p>
+</div>
 
-    localStorage.bgColor = bg;
-    localStorage.btnColor = btn;
-    localStorage.font = font;
+<div id="donationSection" style="margin-top:30px;">
+  <h2>Donation Settings</h2>
+  <!-- FAT NOTE: Placeholder donation controls for admin -->
+  <p>Configure donation links, display options, and payment methods here.</p>
+  <button class="button" onclick="alert('Donation settings placeholder');">Edit Donation Settings</button>
+</div>
 
-    alert("Settings Saved!");
-  }
+<!-- Power & Armin: Music Player Enhancements -->
+<div id="enhancedPlayer" style="margin-top:30px;">
+  <h2>Music Player Queue & Controls</h2>
+  <p>Select multiple files from your device to create a playlist.</p>
+  <input type="file" id="multiMusicFiles" multiple accept="audio/*"><br>
+  <ul id="enhancedTrackList"></ul>
 
-  // Armin & Power: Music Player JS
-  const track = document.getElementById('track');
-  const musicFiles = document.getElementById('musicFiles');
-  const trackList = document.getElementById('trackList');
-  let queue = [];
+  <button class="button" onclick="playNext()">Play Next</button>
+  <button class="button" onclick="deleteAllTracks()">Clear Queue</button>
+</div>
 
-  musicFiles.onchange = (e) => {
+<script>
+  // Armin & Power: Music Player Queue Enhancements
+  const multiMusicFiles = document.getElementById('multiMusicFiles');
+  const enhancedTrackList = document.getElementById('enhancedTrackList');
+  let enhancedQueue = JSON.parse(localStorage.getItem('enhancedQueue')) || [];
+
+  multiMusicFiles.onchange = (e) => {
     for(let file of e.target.files){
       const url = URL.createObjectURL(file);
-      queue.push({name: file.name, url: url});
-      renderQueue();
+      enhancedQueue.push({name:file.name, url:url});
     }
+    renderEnhancedQueue();
   }
 
-  function renderQueue(){
-    trackList.innerHTML = "";
-    queue.forEach((item, index) => {
+  function renderEnhancedQueue(){
+    enhancedTrackList.innerHTML = "";
+    enhancedQueue.forEach((item,index)=>{
       const li = document.createElement('li');
       li.textContent = item.name + " ";
       const playBtn = document.createElement('button');
@@ -130,59 +307,169 @@
       playBtn.onclick = () => { track.src = item.url; track.play(); };
       const delBtn = document.createElement('button');
       delBtn.textContent = "Delete";
-      delBtn.onclick = () => { queue.splice(index, 1); renderQueue(); saveQueue(); };
+      delBtn.onclick = () => { enhancedQueue.splice(index,1); renderEnhancedQueue(); saveEnhancedQueue(); };
       li.appendChild(playBtn);
       li.appendChild(delBtn);
-      trackList.appendChild(li);
+      enhancedTrackList.appendChild(li);
     });
-    saveQueue();
+    saveEnhancedQueue();
   }
 
-  function saveQueue(){
-    localStorage.setItem('musicQueue', JSON.stringify(queue));
+  function saveEnhancedQueue(){
+    localStorage.setItem('enhancedQueue', JSON.stringify(enhancedQueue));
   }
 
-  // Power & Yūrei: Beat-Synced Visualizer
-  const canvas = document.createElement('canvas');
-  canvas.id = "visualizer";
-  canvas.width = 300;
-  canvas.height = 300;
-  canvas.style.marginTop = "20px";
-  document.body.appendChild(canvas);
+  function playNext(){
+    if(enhancedQueue.length>0){
+      const next = enhancedQueue.shift();
+      track.src = next.url;
+      track.play();
+      renderEnhancedQueue();
+      saveEnhancedQueue();
+    } else alert("Queue is empty!");
+  }
 
-  const ctx = canvas.getContext('2d');
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const analyser = audioCtx.createAnalyser();
-  let source;
-
-  track.onplay = () => {
-    if(!source){
-      source = audioCtx.createMediaElementSource(track);
-      source.connect(analyser);
-      analyser.connect(audioCtx.destination);
-      analyser.fftSize = 256;
+  function deleteAllTracks(){
+    if(confirm("Delete all tracks from the queue?")){
+      enhancedQueue = [];
+      renderEnhancedQueue();
+      saveEnhancedQueue();
     }
-    animateVisualizer();
-  };
-
-  function animateVisualizer(){
-    requestAnimationFrame(animateVisualizer);
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    analyser.getByteFrequencyData(dataArray);
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    let sum = 0;
-    for(let i = 0; i < bufferLength; i++) sum += dataArray[i];
-    let avg = sum / bufferLength;
-
-    const radius = 50 + avg / 2;
-    ctx.beginPath();
-    ctx.arc(canvas.width/2, canvas.height/2, radius, 0, Math.PI*2);
-    ctx.fillStyle = '#ff6600';
-    ctx.fill();
   }
 </script>
+<!-- FAT NOTE: End of CHUNK 3. New chunks go below this but above </body> -->
+
+ </html>
+<!-- FAT NOTE: End of file. Add new chunks BEFORE </body> -->
+
+<!-- CHUNK 4: Customization Panel Enhancements -->
+<div id="customizationEnhancements" style="margin-top:30px;">
+  <h2>Appearance & Font Settings</h2>
+  <!-- FAT NOTE: Admin can customize background, button colors, and font -->
+  
+  <label>Background Color:
+    <input type="color" id="enhancedBgColor">
+  </label><br>
+
+  <label>Button Color:
+    <input type="color" id="enhancedBtnColor">
+  </label><br>
+
+  <label>Font:
+    <select id="enhancedFontSelect">
+      <option value="Arial, sans-serif">Arial</option>
+      <option value="'Courier New', monospace">Courier New</option>
+      <option value="'Times New Roman', serif">Times New Roman</option>
+      <option value="'Verdana', sans-serif">Verdana</option>
+    </select>
+  </label><br>
+
+  <button class="button" id="saveEnhancedSettings">Save Appearance</button>
+</div>
+
+<script>
+  // Himeno & Mikasa: Customization enhancements
+  const enhancedBgColor = document.getElementById('enhancedBgColor');
+  const enhancedBtnColor = document.getElementById('enhancedBtnColor');
+  const enhancedFontSelect = document.getElementById('enhancedFontSelect');
+  const saveEnhancedSettings = document.getElementById('saveEnhancedSettings');
+
+  window.addEventListener('load', () => {
+    // Load saved settings
+    if(localStorage.enhancedBg) document.body.style.backgroundColor = localStorage.enhancedBg;
+    if(localStorage.enhancedBtn) updateEnhancedButtonColor(localStorage.enhancedBtn);
+    if(localStorage.enhancedFont) document.body.style.fontFamily = localStorage.enhancedFont;
+
+    enhancedBgColor.value = localStorage.enhancedBg || "#111111";
+    enhancedBtnColor.value = localStorage.enhancedBtn || "#ff6600";
+    enhancedFontSelect.value = localStorage.enhancedFont || "Arial, sans-serif";
+  });
+
+  function updateEnhancedButtonColor(color){
+    const buttons = document.querySelectorAll('.button');
+    buttons.forEach(btn => btn.style.backgroundColor = color);
+  }
+
+  saveEnhancedSettings.onclick = () => {
+    const bg = enhancedBgColor.value;
+    const btn = enhancedBtnColor.value;
+    const font = enhancedFontSelect.value;
+
+    document.body.style.backgroundColor = bg;
+    updateEnhancedButtonColor(btn);
+    document.body.style.fontFamily = font;
+
+    localStorage.enhancedBg = bg;
+    localStorage.enhancedBtn = btn;
+    localStorage.enhancedFont = font;
+
+    alert("Appearance settings saved!");
+  }
+</script>
+<!-- FAT NOTE: End of CHUNK 4. New chunks go below this but above </body> -->
+
+<!-- CHUNK 5: Music Player Electric Visualizer -->
+<div id="electricVisualizerContainer" style="margin-top:30px;">
+  <h2>Electric Visualizer</h2>
+  <!-- FAT NOTE: Replaces previous circular visualizer with electric-style bars -->
+  <canvas id="electricVisualizer" width="400" height="200" style="background:#111;"></canvas>
+</div>
+
+<script>
+  // Power & Yūrei: Electric-style visualizer
+  const electricCanvas = document.getElementById('electricVisualizer');
+  const eCtx = electricCanvas.getContext('2d');
+  const eAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const eAnalyser = eAudioCtx.createAnalyser();
+  let eSource;
+
+  track.onplay = () => {
+    if(!eSource){
+      eSource = eAudioCtx.createMediaElementSource(track);
+      eSource.connect(eAnalyser);
+      eAnalyser.connect(eAudioCtx.destination);
+      eAnalyser.fftSize = 128;
+    }
+    animateElectricVisualizer();
+  };
+
+  function animateElectricVisualizer(){
+    requestAnimationFrame(animateElectricVisualizer);
+    const bufferLength = eAnalyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    eAnalyser.getByteFrequencyData(dataArray);
+
+    eCtx.clearRect(0, 0, electricCanvas.width, electricCanvas.height);
+
+    const barWidth = (electricCanvas.width / bufferLength) * 2.5;
+    let x = 0;
+
+    for(let i = 0; i < bufferLength; i++){
+      const barHeight = dataArray[i];
+      const r = barHeight + 100;
+      const g = 50;
+      const b = 255 - barHeight;
+      eCtx.fillStyle = `rgb(${r},${g},${b})`;
+      eCtx.fillRect(x, electricCanvas.height - barHeight, barWidth, barHeight);
+      x += barWidth + 1;
+    }
+  }
+</script>
+<!-- FAT NOTE: End of CHUNK 5. Future chunks (if any) go below this but above </body> -->
+
+<!-- CHUNK 6: FAT DADDY NOTES & GROVE-CODED INTERNAL NOTES -->
+<!--
+FAT DADDY NOTES:
+- Mikasa: Ensures body structure remains single <body> tag; all chunks go inside.
+- Power: Tracks which music files are added, manages local queue.
+- Himeno: Manages customization settings, saves to localStorage.
+- Yūrei: Maintains "What's In Progress" popup and professional notes.
+- Armin: Oversees queue management and playlist enhancements.
+- Grove Reminder: Future experimental features (Merge Scripts, Guest Section) to be added in new chunks above </body>.
+- Reminder: Always leave a line of space between chunks for readability.
+- Notes are **Grove-coded**: Only for developer/owner reference; no Grove language appears on the public website.
+-->
+<!-- FAT NOTE: End of CHUNK 6. New chunks, if any, go above </body> -->
+
 </body>
-</html>
+
