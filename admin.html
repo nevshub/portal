@@ -88,6 +88,10 @@
     const smoothedValues = [];
     let beatLevel = 0;
     let rotationAngle = 0;
+    let hueOffset = 0;
+
+    // Sparkle storage for fade effect
+    const sparkles = [];
 
     fileInput.addEventListener("change", () => {
       playlist.innerHTML = "";
@@ -128,8 +132,8 @@
       const barWidth = document.getElementById("barWidth").value;
       const sensitivity = document.getElementById("sensitivity").value;
 
-      // Fade effect for trail (semi-transparent overlay)
-      ctx.fillStyle = bgColor + 'DD'; // DD = alpha for trail persistence
+      // Background
+      ctx.fillStyle = bgColor + 'DD';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Smooth values
@@ -137,41 +141,61 @@
         smoothedValues[i] += (dataArray[i] - smoothedValues[i]) * 0.1;
       }
 
-      // Beat level for rotation and glow
+      // Bass detection
       let bassSum = 0;
       const bassCount = Math.floor(dataArray.length / 10);
       for (let i = 0; i < bassCount; i++) bassSum += smoothedValues[i];
       beatLevel = bassSum / bassCount / 255;
 
       rotationAngle += 0.01 + beatLevel * 0.05;
+      hueOffset += 1 + beatLevel * 3;
 
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
-      const baseRadius = 80 + beatLevel * 50;
+      const baseRadius = 80 + beatLevel * 100;
       const totalBars = 60;
 
       ctx.save();
       ctx.translate(centerX, centerY);
       ctx.rotate(rotationAngle);
 
+      // Electric circle bars
       for (let i = 0; i < totalBars; i++) {
         const bassIndex = Math.floor(i * 2);
         const hiHatIndex = dataArray.length - totalBars + i;
         const value = (smoothedValues[bassIndex] + smoothedValues[hiHatIndex]) / 2;
         const barLength = value * (sensitivity / 64);
         const angle = (i / totalBars) * 2 * Math.PI;
+        const hue = (hueOffset + value) % 360;
 
-        const hue = (60 + value + rotationAngle*50) % 360;
         ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-        ctx.shadowBlur = 15 + beatLevel * 20;
+        ctx.shadowBlur = 15 + beatLevel * 30;
         ctx.shadowColor = ctx.fillStyle;
 
         ctx.rotate(angle);
         ctx.fillRect(baseRadius, -barWidth/2, barLength, barWidth);
         ctx.rotate(-angle);
       }
-
       ctx.restore();
+
+      // High-hat sparkles with fading
+      const highHatSum = dataArray.slice(-60).reduce((a,b) => a+b,0) / 60 / 255;
+      const sparkleCount = 40;
+      for (let i = 0; i < sparkleCount; i++) {
+        if (!sparkles[i]) {
+          sparkles[i] = { alpha: 0, angle: (i / sparkleCount) * 2*Math.PI };
+        }
+
+        // Fade in/out
+        sparkles[i].alpha += (Math.random() * 0.05 + highHatSum*0.2 - sparkles[i].alpha) * 0.1;
+
+        const radius = baseRadius + 120 + Math.sin(Date.now()/200 + i) * 10 + highHatSum*50;
+        const hue = (hueOffset + i*5) % 360;
+        ctx.fillStyle = `hsla(${hue}, 100%, 70%, ${sparkles[i].alpha})`;
+        ctx.beginPath();
+        ctx.arc(centerX + radius * Math.cos(sparkles[i].angle), centerY + radius * Math.sin(sparkles[i].angle), 3, 0, 2*Math.PI);
+        ctx.fill();
+      }
     }
 
     draw();
