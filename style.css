@@ -1,4 +1,4 @@
-/* ==================== CHUNK 1: Global Styles ==================== */
+/* ==================== GLOBAL STYLES ==================== */
 /* Mikasa: Ensures consistent layout and font across all pages */
 body {
   margin: 0;
@@ -8,94 +8,130 @@ body {
   font-family: Arial, sans-serif;
   text-align: center;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
+
 a {
   color: #ff6600;
   text-decoration: none;
 }
-.button {
-  background-color: #ff6600;
-  border: none;
-  padding: 10px 20px;
-  color: #fff;
-  cursor: pointer;
-  margin: 5px;
-  border-radius: 5px;
-}
-.button:hover {
-  opacity: 0.8;
-}
-/* FAT NOTE: End of CHUNK 1. Next chunk goes below */
 
-[leave one line of space here]
-
-/* ==================== CHUNK 2: Homepage Styles ==================== */
-/* Himeno: Styles specific to index.html */
 h1 {
   font-size: 2.5em;
   margin-bottom: 20px;
 }
+
+h2 {
+  margin-top: 30px;
+  margin-bottom: 10px;
+}
+
 p {
   max-width: 600px;
   line-height: 1.6;
-  margin: 0 auto 20px;
+  margin-bottom: 20px;
 }
-/* FAT NOTE: End of CHUNK 2. Next chunk goes below */
 
-[leave one line of space here]
+/* ==================== BUTTON STYLES ==================== */
+/* Power: Buttons for admin, donations, homepage links */
+.button, #donateButton {
+  background-color: #ff6600;
+  border: none;
+  padding: 12px 28px;
+  color: #fff;
+  cursor: pointer;
+  margin: 10px 5px;
+  border-radius: 8px;
+  font-size: 1.2em;
+  text-decoration: none;
+  transition: background 0.3s, transform 0.2s;
+  display: inline-block;
+}
 
-/* ==================== CHUNK 3: Admin Panel Styles ==================== */
-/* Power: Styles for admin.html customization panel and music player */
-#trackList {
+.button:hover, #donateButton:hover {
+  background-color: #ff8533;
+  transform: scale(1.05);
+}
+
+/* ==================== INPUT / SELECT / TEXTAREA ==================== */
+input[type="color"],
+input[type="range"],
+input[type="text"],
+textarea,
+select {
+  margin: 8px 0;
+  padding: 6px 8px;
+  border-radius: 5px;
+  border: 1px solid #555;
+  background-color: #222;
+  color: #fff;
+  font-size: 1em;
+}
+
+/* ==================== AUDIO / MUSIC PLAYER ==================== */
+audio {
+  margin-top: 15px;
+  width: 300px;
+}
+
+#trackList,
+#enhancedTrackList {
   list-style-type: none;
   padding: 0;
 }
-#trackList li {
+
+#trackList li,
+#enhancedTrackList li {
   margin: 5px 0;
 }
-input[type="color"], select {
-  margin: 5px 0 10px;
-  padding: 5px;
+
+canvas {
+  margin-top: 20px;
+  background-color: #111;
+  border-radius: 8px;
 }
-/* FAT NOTE: End of CHUNK 3. Next chunk goes below */
 
-[leave one line of space here]
+/* ==================== ADMIN / CUSTOMIZATION PANELS ==================== */
+#customization,
+#enhancedPlayer,
+#guestSection,
+#donationSection {
+  margin-top: 30px;
+  padding: 15px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 700px;
+}
 
-/* ==================== CHUNK 4: Notes Page Styles ==================== */
-/* Armin: Styles for notes.html readability */
+/* ==================== NOTES PAGE ==================== */
 .notes-section {
   max-width: 700px;
   margin: 20px auto;
   text-align: left;
   line-height: 1.5;
 }
-/* FAT NOTE: End of CHUNK 4. Next chunk goes below */
 
-[leave one line of space here]
-
-/* ==================== CHUNK 5: Projects Page Styles ==================== */
-/* Yūrei: Styles for projects.html project list and headers */
+/* ==================== PROJECTS PAGE ==================== */
 ul {
   padding-left: 20px;
   text-align: left;
   max-width: 700px;
   margin: 0 auto 20px;
 }
+
 li {
   margin-bottom: 5px;
 }
-/* FAT NOTE: End of CHUNK 5. Next chunk goes below */
 
-[leave one line of space here]
-
-/* ==================== CHUNK 6: Grove-coded Internal Notes ==================== */
+/* ==================== GROVE-CODED INTERNAL NOTES ==================== */
 /* Grove Notes (developer-only):
-   Mikasa: Oversees consistent spacing
+   Mikasa: Ensures consistent spacing
    Power: Tracks interactive elements like buttons and audio
    Himeno: Notes on color palettes and customization
    Armin: Reminds about mobile-friendly layouts
    Yūrei: Guides professional readability and Fat Daddy tips
 */
-/* FAT NOTE: End of CHUNK 6. Next chunk goes below */
-
-[leave one line of space here]
