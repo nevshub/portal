@@ -10,8 +10,9 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start; /* aligned to top for better readability */
   align-items: center;
+  padding-top: 40px; /* spacing from top */
 }
 
 a {
@@ -30,7 +31,7 @@ h2 {
 }
 
 p {
-  max-width: 600px;
+  max-width: 700px;
   line-height: 1.6;
   margin-bottom: 20px;
 }
@@ -63,18 +64,21 @@ input[type="text"],
 textarea,
 select {
   margin: 8px 0;
-  padding: 6px 8px;
-  border-radius: 5px;
+  padding: 8px 10px;
+  border-radius: 6px;
   border: 1px solid #555;
   background-color: #222;
   color: #fff;
   font-size: 1em;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ==================== AUDIO / MUSIC PLAYER ==================== */
 audio {
   margin-top: 15px;
-  width: 300px;
+  width: 100%;
+  max-width: 400px;
 }
 
 #trackList,
@@ -86,12 +90,17 @@ audio {
 #trackList li,
 #enhancedTrackList li {
   margin: 5px 0;
+  text-align: left;
 }
 
+/* Canvas visualizers */
 canvas {
   margin-top: 20px;
   background-color: #111;
   border-radius: 8px;
+  width: 100%;
+  max-width: 700px;
+  height: 150px;
 }
 
 /* ==================== ADMIN / CUSTOMIZATION PANELS ==================== */
@@ -100,11 +109,12 @@ canvas {
 #guestSection,
 #donationSection {
   margin-top: 30px;
-  padding: 15px;
+  padding: 20px;
   border: 1px solid #333;
   border-radius: 8px;
-  width: 80%;
+  width: 90%;
   max-width: 700px;
+  text-align: left;
 }
 
 /* ==================== NOTES PAGE ==================== */
@@ -124,7 +134,7 @@ ul {
 }
 
 li {
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 }
 
 /* ==================== GROVE-CODED INTERNAL NOTES ==================== */
