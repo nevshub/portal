@@ -15,7 +15,7 @@
       min-height: 100vh;
     }
     h1, h2 { margin-bottom: 20px; }
-    #player { margin-bottom: 20px; }
+    #player { margin-bottom: 20px; position: relative; }
     #playlist { margin-top: 10px; }
     .button {
       background-color: #ff6600;
@@ -31,6 +31,21 @@
     #customization { margin: 30px 0; text-align: left; display: inline-block; }
     #customization label { display: block; margin-bottom: 10px; }
     #donationSection, #progressSection { margin-top: 30px; }
+    #fullscreenBtn, #minimizeBtn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+      padding: 5px 12px;
+      font-size: 0.9em;
+      border-radius: 5px;
+      background-color: #ff6600;
+      border: none;
+      color: #fff;
+      cursor: pointer;
+    }
+    #minimizeBtn { display: none; }
+    canvas { display: block; margin: 0 auto; background-color: #111; border-radius: 8px; width: 100%; max-width: 700px; height: 400px; }
   </style>
 </head>
 <body>
@@ -41,6 +56,8 @@
     <audio id="audio" controls></audio>
     <input type="file" id="fileInput" accept="audio/*" multiple>
     <div id="playlist"></div>
+    <button id="fullscreenBtn">Fullscreen</button>
+    <button id="minimizeBtn">Minimize</button>
   </div>
 
   <!-- Visualizer -->
@@ -78,7 +95,7 @@
     <h2>What’s in Progress</h2>
     <ul>
       <li>Donation button integration with CashApp is prepared and ready to be connected.</li>
-      <li>A message box for submitting requests — updates or expansions to the website — will be added to the Admin Panel soon.</li>
+      <li>A message box for submitting requests will be added to the Admin Panel soon.</li>
     </ul>
   </div>
 
@@ -92,19 +109,21 @@
     const playlist = document.getElementById("playlist");
     const canvas = document.getElementById("visualizer");
     const ctx = canvas.getContext("2d");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const minimizeBtn = document.getElementById("minimizeBtn");
 
-    canvas.width = window.innerWidth;
-    canvas.height = 400;
+    const bgColorInput = document.getElementById("bgColor");
+    const barWidthInput = document.getElementById("barWidth");
+    const sensitivityInput = document.getElementById("sensitivity");
 
     let audioCtx, analyser, source, dataArray;
     const smoothedValues = [];
     let beatLevel = 0;
     let rotationAngle = 0;
     let hueOffset = 0;
-
-    // Sparkle storage for fade effect
     const sparkles = [];
 
+    // Music Player
     fileInput.addEventListener("change", () => {
       playlist.innerHTML = "";
       Array.from(fileInput.files).forEach((file, index) => {
@@ -134,26 +153,46 @@
       }
     }
 
+    // Fullscreen / Minimize
+    fullscreenBtn.onclick = () => {
+      if (canvas.requestFullscreen) canvas.requestFullscreen();
+      else if (canvas.webkitRequestFullscreen) canvas.webkitRequestFullscreen();
+      else if (canvas.msRequestFullscreen) canvas.msRequestFullscreen();
+    };
+
+    minimizeBtn.onclick = () => {
+      if (document.exitFullscreen) document.exitFullscreen();
+    };
+
+    document.addEventListener("fullscreenchange", () => {
+      if (!document.fullscreenElement) {
+        fullscreenBtn.style.display = 'block';
+        minimizeBtn.style.display = 'none';
+      } else {
+        fullscreenBtn.style.display = 'none';
+        minimizeBtn.style.display = 'block';
+      }
+    });
+
     function draw() {
       requestAnimationFrame(draw);
       if (!analyser) return;
 
       analyser.getByteFrequencyData(dataArray);
+      const bgColor = bgColorInput.value;
+      const barWidth = barWidthInput.value;
+      const sensitivity = sensitivityInput.value;
 
-      const bgColor = document.getElementById("bgColor").value;
-      const barWidth = document.getElementById("barWidth").value;
-      const sensitivity = document.getElementById("sensitivity").value;
-
-      // Background
       ctx.fillStyle = bgColor + 'DD';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Smooth values
+      const widthScale = canvas.width / 700;
+      const heightScale = canvas.height / 400;
+
       for (let i = 0; i < dataArray.length; i++) {
         smoothedValues[i] += (dataArray[i] - smoothedValues[i]) * 0.1;
       }
 
-      // Bass detection
       let bassSum = 0;
       const bassCount = Math.floor(dataArray.length / 10);
       for (let i = 0; i < bassCount; i++) bassSum += smoothedValues[i];
@@ -164,48 +203,42 @@
 
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
-      const baseRadius = 80 + beatLevel * 100;
+      const baseRadius = (80 + beatLevel * 100) * heightScale;
       const totalBars = 60;
 
       ctx.save();
       ctx.translate(centerX, centerY);
       ctx.rotate(rotationAngle);
 
-      // Electric circle bars
       for (let i = 0; i < totalBars; i++) {
         const bassIndex = Math.floor(i * 2);
         const hiHatIndex = dataArray.length - totalBars + i;
         const value = (smoothedValues[bassIndex] + smoothedValues[hiHatIndex]) / 2;
-        const barLength = value * (sensitivity / 64);
+        const barLength = value * (sensitivity / 64) * heightScale;
         const angle = (i / totalBars) * 2 * Math.PI;
         const hue = (hueOffset + value) % 360;
 
         ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-        ctx.shadowBlur = 15 + beatLevel * 30;
+        ctx.shadowBlur = 15 * heightScale + beatLevel * 30;
         ctx.shadowColor = ctx.fillStyle;
 
         ctx.rotate(angle);
-        ctx.fillRect(baseRadius, -barWidth/2, barLength, barWidth);
+        ctx.fillRect(baseRadius, -barWidth/2 * heightScale, barLength, barWidth * heightScale);
         ctx.rotate(-angle);
       }
       ctx.restore();
 
-      // High-hat sparkles with fading
       const highHatSum = dataArray.slice(-60).reduce((a,b) => a+b,0) / 60 / 255;
       const sparkleCount = 40;
       for (let i = 0; i < sparkleCount; i++) {
-        if (!sparkles[i]) {
-          sparkles[i] = { alpha: 0, angle: (i / sparkleCount) * 2*Math.PI };
-        }
+        if (!sparkles[i]) sparkles[i] = { alpha: 0, angle: (i / sparkleCount) * 2*Math.PI };
 
-        // Fade in/out
         sparkles[i].alpha += (Math.random() * 0.05 + highHatSum*0.2 - sparkles[i].alpha) * 0.1;
-
-        const radius = baseRadius + 120 + Math.sin(Date.now()/200 + i) * 10 + highHatSum*50;
+        const radius = baseRadius + 120 * heightScale + Math.sin(Date.now()/200 + i) * 10 * heightScale + highHatSum * 50 * heightScale;
         const hue = (hueOffset + i*5) % 360;
         ctx.fillStyle = `hsla(${hue}, 100%, 70%, ${sparkles[i].alpha})`;
         ctx.beginPath();
-        ctx.arc(centerX + radius * Math.cos(sparkles[i].angle), centerY + radius * Math.sin(sparkles[i].angle), 3, 0, 2*Math.PI);
+        ctx.arc(centerX + radius * Math.cos(sparkles[i].angle), centerY + radius * Math.sin(sparkles[i].angle), 3 * heightScale, 0, 2*Math.PI);
         ctx.fill();
       }
     }
