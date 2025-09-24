@@ -2,251 +2,127 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Panel</title>
+  <title>Admin Stream Panel</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #111;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      min-height: 100vh;
-    }
-    h1, h2 { margin-bottom: 20px; }
-    #player { margin-bottom: 20px; position: relative; }
-    #playlist { margin-top: 10px; }
-    .button {
-      background-color: #ff6600;
-      border: none;
-      padding: 10px 20px;
-      color: #fff;
-      cursor: pointer;
-      margin: 5px;
-      border-radius: 5px;
-      display: inline-block;
-    }
-    .button:hover { opacity: 0.85; }
-    #customization { margin: 30px 0; text-align: left; display: inline-block; }
-    #customization label { display: block; margin-bottom: 10px; }
-    #donationSection, #progressSection { margin-top: 30px; }
-    #fullscreenBtn, #minimizeBtn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 10;
-      padding: 5px 12px;
-      font-size: 0.9em;
-      border-radius: 5px;
-      background-color: #ff6600;
-      border: none;
-      color: #fff;
-      cursor: pointer;
-    }
-    #minimizeBtn { display: none; }
-    canvas { display: block; margin: 0 auto; background-color: #111; border-radius: 8px; width: 100%; max-width: 700px; height: 400px; }
-    .button-container { margin-top: 30px; }
-  </style>
 </head>
 <body>
-  <h1>Admin Panel</h1>
+  <h1>Admin Main Page in Progress</h1>
 
-  <!-- Music Player -->
-  <div id="player">
-    <audio id="audio" controls></audio>
-    <input type="file" id="fileInput" accept="audio/*" multiple>
-    <div id="playlist"></div>
-    <button id="fullscreenBtn">Fullscreen</button>
-    <button id="minimizeBtn">Minimize</button>
-  </div>
+  <!-- Streaming Section -->
+  <div id="streamSection" style="margin-top:30px; display:none;">
+    <h2>Admin Streaming</h2>
+    <button id="startStreamBtn" class="button">Start Stream</button>
+    <video id="liveStream" autoplay playsinline style="width:100%; max-width:700px; margin-top:20px; border-radius:8px;"></video>
 
-  <!-- Visualizer -->
-  <canvas id="visualizer"></canvas>
-
-  <!-- Customization Panel -->
-  <div id="customization">
-    <h2>Customization</h2>
-    <label>
-      Background Color:
-      <input type="color" id="bgColor" value="#111111">
-    </label>
-    <label>
-      Bar Width:
-      <input type="range" id="barWidth" min="1" max="10" value="4">
-    </label>
-    <label>
-      Sensitivity:
-      <input type="range" id="sensitivity" min="10" max="256" value="64">
-    </label>
-  </div>
-
-  <!-- Donation Section -->
-  <div id="donationSection">
-    <h2>Donation Settings</h2>
-    <p>Click below to donate via Cash App.</p>
-    <button id="donateButton" class="button"
-            onclick="window.open('https://cash.app/$YourCashtag', '_blank')">
-      Donate Now
-    </button>
-  </div>
-
-  <!-- What's in Progress -->
-  <div id="progressSection">
-    <h2>What’s in Progress</h2>
-    <ul>
-      <li>Donation button integration with CashApp is prepared and ready to be connected.</li>
-      <li>A message box for submitting requests will be added to the Admin Panel soon.</li>
-    </ul>
-  </div>
-
-  <!-- Button Links -->
-  <div class="button-container">
-    <a href="index.html" class="button">Back to Home</a>
-    <a href="https://your-grove-link.com" class="button" target="_blank">Visit Grove</a>
+    <h3>Stream History</h3>
+    <ul id="streamList" style="list-style:none; padding:0;"></ul>
   </div>
 
   <script>
-    const audio = document.getElementById("audio");
-    const fileInput = document.getElementById("fileInput");
-    const playlist = document.getElementById("playlist");
-    const canvas = document.getElementById("visualizer");
-    const ctx = canvas.getContext("2d");
-    const fullscreenBtn = document.getElementById("fullscreenBtn");
-    const minimizeBtn = document.getElementById("minimizeBtn");
+    const ADMIN_PASSWORD = "Nev123";
+    let role = localStorage.getItem("userRole") || "guest";
 
-    const bgColorInput = document.getElementById("bgColor");
-    const barWidthInput = document.getElementById("barWidth");
-    const sensitivityInput = document.getElementById("sensitivity");
+    // Prompt for Admin password if not set
+    if(role !== "admin") {
+      const input = prompt("Enter Admin password (leave empty if guest):");
+      if(input === ADMIN_PASSWORD) role = "admin";
+      else role = "guest";
+      localStorage.setItem("userRole", role);
+    }
 
-    let audioCtx, analyser, source, dataArray;
-    const smoothedValues = [];
-    let beatLevel = 0;
-    let rotationAngle = 0;
-    let hueOffset = 0;
-    const sparkles = [];
+    const streamSection = document.getElementById("streamSection");
+    const startStreamBtn = document.getElementById("startStreamBtn");
+    const liveStream = document.getElementById("liveStream");
+    const streamListEl = document.getElementById("streamList");
 
-    // Music Player
-    fileInput.addEventListener("change", () => {
-      playlist.innerHTML = "";
-      Array.from(fileInput.files).forEach((file, index) => {
-        const item = document.createElement("div");
-        item.textContent = file.name;
-        item.classList.add("playlist-item");
-        item.onclick = () => loadTrack(file);
-        playlist.appendChild(item);
-        if (index === 0) loadTrack(file);
+    let localStream = null;
+    let peers = {};
+    let streams = JSON.parse(localStorage.getItem("streams") || "[]");
+
+    // Show streaming section only to Admin
+    if(role === "admin") {
+      streamSection.style.display = "block";
+      renderStreamList();
+    }
+
+    const socket = new WebSocket("ws://localhost:3000");
+
+    socket.onmessage = async (event) => {
+      const data = JSON.parse(event.data);
+
+      if(data.type === "offer" && role === "admin") return; // Admin ignores offers
+      if(data.type === "answer" && role === "admin") {
+        const pc = peers[data.id];
+        if(pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+      }
+      if(data.type === "candidate" && role === "admin") {
+        const pc = peers[data.id];
+        if(pc) pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      }
+    };
+
+    startStreamBtn.addEventListener("click", async () => {
+      localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+      liveStream.srcObject = localStream;
+
+      // Save stream in history
+      const name = prompt("Enter a name for this stream:", "New Stream") || "New Stream";
+      const timestamp = new Date().toLocaleString();
+      const streamEntry = { id: Date.now(), name, timestamp };
+      streams.unshift(streamEntry); // newest first
+      localStorage.setItem("streams", JSON.stringify(streams));
+      renderStreamList();
+
+      broadcastToViewers();
+    });
+
+    async function broadcastToViewers() {
+      const viewerId = Date.now();
+      peers[viewerId] = new RTCPeerConnection();
+
+      localStream.getTracks().forEach(track => peers[viewerId].addTrack(track, localStream));
+
+      peers[viewerId].onicecandidate = event => {
+        if(event.candidate) socket.send(JSON.stringify({ type: "candidate", candidate: event.candidate, id: viewerId }));
+      };
+
+      const offer = await peers[viewerId].createOffer();
+      await peers[viewerId].setLocalDescription(offer);
+      socket.send(JSON.stringify({ type: "offer", offer, id: viewerId }));
+    }
+
+    function renderStreamList() {
+      streamListEl.innerHTML = "";
+      streams.forEach(stream => {
+        const li = document.createElement("li");
+        li.style.marginBottom = "10px";
+        li.innerHTML = `
+          <strong>Name:</strong> <span class="streamName">${stream.name}</span> 
+          | <strong>Time:</strong> ${stream.timestamp} 
+          <button class="editBtn" style="margin-left:10px;">Edit</button>
+          <button class="deleteBtn" style="margin-left:5px;">Delete</button>
+        `;
+
+        li.querySelector(".editBtn").addEventListener("click", () => {
+          const newName = prompt("Edit stream name:", stream.name);
+          if(newName) {
+            stream.name = newName;
+            localStorage.setItem("streams", JSON.stringify(streams));
+            renderStreamList();
+          }
+        });
+
+        li.querySelector(".deleteBtn").addEventListener("click", () => {
+          if(confirm("Delete this stream?")) {
+            streams = streams.filter(s => s.id !== stream.id);
+            localStorage.setItem("streams", JSON.stringify(streams));
+            renderStreamList();
+          }
+        });
+
+        streamListEl.appendChild(li);
       });
-    });
-
-    function loadTrack(file) {
-      const url = URL.createObjectURL(file);
-      audio.src = url;
-      audio.play();
-
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        analyser = audioCtx.createAnalyser();
-        source = audioCtx.createMediaElementSource(audio);
-        source.connect(analyser);
-        analyser.connect(audioCtx.destination);
-        analyser.fftSize = 512;
-        dataArray = new Uint8Array(analyser.frequencyBinCount);
-        for (let i = 0; i < analyser.frequencyBinCount; i++) smoothedValues[i] = 0;
-      }
     }
-
-    // Fullscreen / Minimize
-    fullscreenBtn.onclick = () => {
-      if (canvas.requestFullscreen) canvas.requestFullscreen();
-      else if (canvas.webkitRequestFullscreen) canvas.webkitRequestFullscreen();
-      else if (canvas.msRequestFullscreen) canvas.msRequestFullscreen();
-    };
-
-    minimizeBtn.onclick = () => {
-      if (document.exitFullscreen) document.exitFullscreen();
-    };
-
-    document.addEventListener("fullscreenchange", () => {
-      if (!document.fullscreenElement) {
-        fullscreenBtn.style.display = 'block';
-        minimizeBtn.style.display = 'none';
-      } else {
-        fullscreenBtn.style.display = 'none';
-        minimizeBtn.style.display = 'block';
-      }
-    });
-
-    function draw() {
-      requestAnimationFrame(draw);
-      if (!analyser) return;
-
-      analyser.getByteFrequencyData(dataArray);
-      const bgColor = bgColorInput.value;
-      const barWidth = barWidthInput.value;
-      const sensitivity = sensitivityInput.value;
-
-      ctx.fillStyle = bgColor + 'DD';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      const widthScale = canvas.width / 700;
-      const heightScale = canvas.height / 400;
-
-      for (let i = 0; i < dataArray.length; i++) {
-        smoothedValues[i] += (dataArray[i] - smoothedValues[i]) * 0.1;
-      }
-
-      let bassSum = 0;
-      const bassCount = Math.floor(dataArray.length / 10);
-      for (let i = 0; i < bassCount; i++) bassSum += smoothedValues[i];
-      beatLevel = bassSum / bassCount / 255;
-
-      rotationAngle += 0.01 + beatLevel * 0.05;
-      hueOffset += 1 + beatLevel * 3;
-
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const baseRadius = (80 + beatLevel * 100) * heightScale;
-      const totalBars = 60;
-
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      ctx.rotate(rotationAngle);
-
-      for (let i = 0; i < totalBars; i++) {
-        const bassIndex = Math.floor(i * 2);
-        const hiHatIndex = dataArray.length - totalBars + i;
-        const value = (smoothedValues[bassIndex] + smoothedValues[hiHatIndex]) / 2;
-        const barLength = value * (sensitivity / 64) * heightScale;
-        const angle = (i / totalBars) * 2 * Math.PI;
-        const hue = (hueOffset + value) % 360;
-
-        ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-        ctx.shadowBlur = 15 * heightScale + beatLevel * 30;
-        ctx.shadowColor = ctx.fillStyle;
-
-        ctx.rotate(angle);
-        ctx.fillRect(baseRadius, -barWidth/2 * heightScale, barLength, barWidth * heightScale);
-        ctx.rotate(-angle);
-      }
-      ctx.restore();
-
-      const highHatSum = dataArray.slice(-60).reduce((a,b) => a+b,0) / 60 / 255;
-      const sparkleCount = 40;
-      for (let i = 0; i < sparkleCount; i++) {
-        if (!sparkles[i]) sparkles[i] = { alpha: 0, angle: (i / sparkleCount) * 2*Math.PI };
-
-        sparkles[i].alpha += (Math.random() * 0.05 + highHatSum*0.2 - sparkles[i].alpha) * 0.1;
-        const radius = baseRadius + 120 * heightScale + Math.sin(Date.now()/200 + i) * 10 * heightScale + highHatSum * 50 * heightScale;
-        const hue = (hueOffset + i*5) % 360;
-        ctx.fillStyle = `hsla(${hue}, 100%, 70%, ${sparkles[i].alpha})`;
-        ctx.beginPath();
-        ctx.arc(centerX + radius * Math.cos(sparkles[i].angle), centerY + radius * Math.sin(sparkles[i].angle), 3 * heightScale, 0, 2*Math.PI);
-        ctx.fill();
-      }
-    }
-
-    draw();
   </script>
 </body>
 </html>
