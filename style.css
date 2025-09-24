@@ -1,18 +1,17 @@
 /* ==================== GLOBAL STYLES ==================== */
-/* Mikasa: Ensures consistent layout and font across all pages */
 body {
   margin: 0;
   padding: 0;
-  background-color: #111;
-  color: #fff;
+  background-color: #111; /* dark gray/black */
+  color: #ff6600;         /* orange font for consistency */
   font-family: Arial, sans-serif;
   text-align: center;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* aligned to top for better readability */
+  justify-content: flex-start;
   align-items: center;
-  padding-top: 40px; /* spacing from top */
+  padding-top: 40px;
 }
 
 a {
@@ -20,29 +19,16 @@ a {
   text-decoration: none;
 }
 
-h1 {
-  font-size: 2.5em;
-  margin-bottom: 20px;
-}
-
-h2 {
-  margin-top: 30px;
-  margin-bottom: 10px;
-}
-
-p {
-  max-width: 700px;
-  line-height: 1.6;
+h1, h2, h3 {
   margin-bottom: 20px;
 }
 
 /* ==================== BUTTON STYLES ==================== */
-/* Power: Buttons for admin, donations, homepage links */
-.button, #donateButton {
+.button {
   background-color: #ff6600;
   border: none;
   padding: 12px 28px;
-  color: #fff;
+  color: #111; /* darker text inside buttons */
   cursor: pointer;
   margin: 10px 5px;
   border-radius: 8px;
@@ -52,96 +38,59 @@ p {
   display: inline-block;
 }
 
-.button:hover, #donateButton:hover {
+.button:hover {
   background-color: #ff8533;
   transform: scale(1.05);
 }
 
-/* ==================== INPUT / SELECT / TEXTAREA ==================== */
-input[type="color"],
-input[type="range"],
-input[type="text"],
-textarea,
-select {
-  margin: 8px 0;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #555;
-  background-color: #222;
-  color: #fff;
-  font-size: 1em;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* ==================== AUDIO / MUSIC PLAYER ==================== */
-audio {
-  margin-top: 15px;
-  width: 100%;
-  max-width: 400px;
-}
-
-#trackList,
-#enhancedTrackList {
-  list-style-type: none;
-  padding: 0;
-}
-
-#trackList li,
-#enhancedTrackList li {
-  margin: 5px 0;
-  text-align: left;
-}
-
-/* Canvas visualizers */
-canvas {
-  margin-top: 20px;
-  background-color: #111;
-  border-radius: 8px;
-  width: 100%;
-  max-width: 700px;
-  height: 150px;
-}
-
-/* ==================== ADMIN / CUSTOMIZATION PANELS ==================== */
-#customization,
-#enhancedPlayer,
-#guestSection,
-#donationSection {
-  margin-top: 30px;
-  padding: 20px;
+/* ==================== STREAM SECTION ==================== */
+#streamSection {
+  background-color: #222;  /* slightly lighter dark gray */
   border: 1px solid #333;
   border-radius: 8px;
+  padding: 20px;
   width: 90%;
-  max-width: 700px;
+  max-width: 720px;
+  margin-top: 30px;
   text-align: left;
 }
 
-/* ==================== NOTES PAGE ==================== */
-.notes-section {
-  max-width: 700px;
-  margin: 20px auto;
-  text-align: left;
-  line-height: 1.5;
+#streamSection h2, #streamSection h3 {
+  color: #ff6600;
 }
 
-/* ==================== PROJECTS PAGE ==================== */
-ul {
-  padding-left: 20px;
-  text-align: left;
-  max-width: 700px;
-  margin: 0 auto 20px;
-}
-
-li {
+#streamList li {
+  background-color: #111;
+  color: #ff6600;
+  padding: 8px 12px;
   margin-bottom: 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-/* ==================== GROVE-CODED INTERNAL NOTES ==================== */
-/* Grove Notes (developer-only):
-   Mikasa: Ensures consistent spacing
-   Power: Tracks interactive elements like buttons and audio
-   Himeno: Notes on color palettes and customization
-   Armin: Reminds about mobile-friendly layouts
-   Yūrei: Guides professional readability and Fat Daddy tips
-*/
+#streamList li button {
+  background-color: #ff6600;
+  color: #111;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 0.9em;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+#streamList li button:hover {
+  background-color: #ff8533;
+  transform: scale(1.05);
+}
+
+/* ==================== VIDEO STYLING ==================== */
+#liveStream {
+  width: 100%;
+  max-width: 700px;
+  margin-top: 20px;
+  border-radius: 8px;
+  background-color: #000;
+}
