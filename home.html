@@ -12,6 +12,7 @@
   <div id="streamSection">
     <h2>Admin Streaming</h2>
     <button id="startStreamBtn" class="button">Start Stream</button>
+    <button id="popoutStreamBtn" class="button">Pop-out Stream</button>
     <video id="liveStream" autoplay playsinline></video>
     
     <h3>Stream History</h3>
@@ -33,15 +34,16 @@
 
     const streamSection = document.getElementById("streamSection");
     const startStreamBtn = document.getElementById("startStreamBtn");
+    const popoutStreamBtn = document.getElementById("popoutStreamBtn");
     const liveStream = document.getElementById("liveStream");
     const streamListEl = document.getElementById("streamList");
 
     let localStream = null;
+    let popoutWindow = null;
     let streams = JSON.parse(localStorage.getItem("streams") || "[]");
 
     // Only show for admin
     if(role !== "admin") streamSection.style.display = "none";
-
     if(role === "admin") {
       streamSection.style.display = "block";
       renderStreamList();
@@ -64,7 +66,39 @@
       }
     }
 
+    function popoutStream() {
+      if(!localStream) {
+        alert("Start the stream first.");
+        return;
+      }
+
+      if(popoutWindow && !popoutWindow.closed) {
+        popoutWindow.focus();
+        return;
+      }
+
+      popoutWindow = window.open("", "PopoutStream", "width=800,height=600");
+      popoutWindow.document.write(`
+        <html>
+        <head>
+          <title>Live Stream</title>
+          <style>
+            body { margin:0; background:#111; display:flex; justify-content:center; align-items:center; height:100vh; }
+            video { width:100%; height:auto; max-width:780px; border-radius:8px; }
+          </style>
+        </head>
+        <body>
+          <video id="popoutVideo" autoplay playsinline></video>
+        </body>
+        </html>
+      `);
+
+      const popoutVideo = popoutWindow.document.getElementById("popoutVideo");
+      popoutVideo.srcObject = localStream;
+    }
+
     startStreamBtn.addEventListener("click", startStream);
+    popoutStreamBtn.addEventListener("click", popoutStream);
 
     function renderStreamList() {
       streamListEl.innerHTML = "";
@@ -77,7 +111,6 @@
           <button class="deleteBtn">Delete</button>
         `;
 
-        // Edit stream name
         li.querySelector(".editBtn").addEventListener("click", () => {
           const newName = prompt("Edit stream name:", stream.name);
           if(newName) {
@@ -87,7 +120,6 @@
           }
         });
 
-        // Delete stream
         li.querySelector(".deleteBtn").addEventListener("click", () => {
           if(confirm("Delete this stream?")) {
             streams = streams.filter(s => s.id !== stream.id);
