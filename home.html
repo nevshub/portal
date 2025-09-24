@@ -12,6 +12,7 @@
   <div id="streamSection" style="margin-top:30px; display:none;">
     <h2>Admin Streaming</h2>
     <button id="startStreamBtn" class="button">Start Stream</button>
+    <button id="stopStreamBtn" class="button" style="display:none;">Stop Stream</button>
     <video id="liveStream" autoplay playsinline style="width:100%; max-width:700px; margin-top:20px; border-radius:8px;"></video>
     
     <h3>Stream History</h3>
@@ -33,10 +34,13 @@
 
     const streamSection = document.getElementById("streamSection");
     const startStreamBtn = document.getElementById("startStreamBtn");
+    const stopStreamBtn = document.getElementById("stopStreamBtn");
     const liveStream = document.getElementById("liveStream");
     const streamListEl = document.getElementById("streamList");
 
     let localStream = null;
+    let mediaRecorder = null;
+    let recordingChunks = [];
     let streams = JSON.parse(localStorage.getItem("streams") || "[]");
 
     // Only show for admin
@@ -45,24 +49,66 @@
       renderStreamList();
     }
 
+    function showNotification(msg) {
+      console.log(msg); // optionally replace with UI toast
+    }
+
     async function startStream() {
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
         liveStream.srcObject = localStream;
 
-        // Save stream entry in history
-        const name = prompt("Enter a name for this stream:", "New Stream") || "New Stream";
-        const timestamp = new Date().toLocaleString();
-        const streamEntry = { id: Date.now(), name, timestamp };
-        streams.unshift(streamEntry); // newest first
-        localStorage.setItem("streams", JSON.stringify(streams));
-        renderStreamList();
+        recordingChunks = [];
+        mediaRecorder = new MediaRecorder(localStream);
+        mediaRecorder.ondataavailable = e => recordingChunks.push(e.data);
+        mediaRecorder.start();
+
+        startStreamBtn.style.display = "none";
+        stopStreamBtn.style.display = "inline-block";
+
+        showNotification("Stream started");
       } catch(err) {
         alert("Cannot access camera/microphone: " + err);
       }
     }
 
+    async function stopStream() {
+      if(!localStream) return;
+
+      mediaRecorder.stop();
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordingChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+
+        // Save stream entry in history
+        const name = prompt("Enter a name for this stream:", "New Stream") || "New Stream";
+        const timestamp = new Date().toLocaleString();
+        const streamEntry = { id: Date.now(), name, timestamp, url };
+        streams.unshift(streamEntry);
+        localStorage.setItem("streams", JSON.stringify(streams));
+        renderStreamList();
+
+        // Auto-download
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `Stream_${new Date().toISOString()}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      };
+
+      localStream.getTracks().forEach(track => track.stop());
+      localStream = null;
+
+      startStreamBtn.style.display = "inline-block";
+      stopStreamBtn.style.display = "none";
+
+      showNotification("Stream stopped");
+    }
+
     startStreamBtn.addEventListener("click", startStream);
+    stopStreamBtn.addEventListener("click", stopStream);
 
     function renderStreamList() {
       streamListEl.innerHTML = "";
@@ -74,9 +120,9 @@
           | <strong>Time:</strong> ${stream.timestamp} 
           <button class="editBtn" style="margin-left:10px;">Edit</button>
           <button class="deleteBtn" style="margin-left:5px;">Delete</button>
+          <button class="playBtn" style="margin-left:5px;">Play</button>
         `;
 
-        // Edit stream name
         li.querySelector(".editBtn").addEventListener("click", () => {
           const newName = prompt("Edit stream name:", stream.name);
           if(newName) {
@@ -86,13 +132,17 @@
           }
         });
 
-        // Delete stream
         li.querySelector(".deleteBtn").addEventListener("click", () => {
           if(confirm("Delete this stream?")) {
             streams = streams.filter(s => s.id !== stream.id);
             localStorage.setItem("streams", JSON.stringify(streams));
             renderStreamList();
           }
+        });
+
+        li.querySelector(".playBtn").addEventListener("click", () => {
+          const videoWindow = window.open("", "_blank");
+          videoWindow.document.write(`<video src="${stream.url}" controls autoplay style="width:100%; max-width:700px;"></video>`);
         });
 
         streamListEl.appendChild(li);
