@@ -9,14 +9,20 @@
   <h1>Welcome to the Home Page</h1>
 
   <!-- Admin Streaming Section -->
-  <div id="streamSection">
+  <div id="streamSection" style="margin-top:30px; display:none;">
     <h2>Admin Streaming</h2>
     <button id="startStreamBtn" class="button">Start Stream</button>
-    <button id="popoutStreamBtn" class="button">Pop-out Stream</button>
-    <video id="liveStream" autoplay playsinline></video>
+    <button id="popoutStreamBtn" class="button">Popout Stream</button>
+    <video id="liveStream" autoplay playsinline style="width:100%; max-width:700px; margin-top:20px; border-radius:8px;"></video>
     
     <h3>Stream History</h3>
-    <ul id="streamList"></ul>
+    <ul id="streamList" style="list-style:none; padding:0;"></ul>
+  </div>
+
+  <!-- Guest View Section -->
+  <div id="viewerSection" style="margin-top:30px; display:none;">
+    <h2>Live Stream</h2>
+    <video id="viewerStream" autoplay playsinline style="width:100%; max-width:700px; margin-top:20px; border-radius:8px;"></video>
   </div>
 
   <script>
@@ -33,21 +39,72 @@
     }
 
     const streamSection = document.getElementById("streamSection");
+    const viewerSection = document.getElementById("viewerSection");
     const startStreamBtn = document.getElementById("startStreamBtn");
     const popoutStreamBtn = document.getElementById("popoutStreamBtn");
     const liveStream = document.getElementById("liveStream");
+    const viewerStream = document.getElementById("viewerStream");
     const streamListEl = document.getElementById("streamList");
 
+    if(role === "admin") streamSection.style.display = "block";
+    else if(role === "guest" || role === "member") viewerSection.style.display = "block";
+
     let localStream = null;
-    let popoutWindow = null;
+    let peers = {};
+    const socket = new WebSocket("ws://localhost:3000"); // signaling server
     let streams = JSON.parse(localStorage.getItem("streams") || "[]");
 
-    // Only show for admin
-    if(role !== "admin") streamSection.style.display = "none";
-    if(role === "admin") {
-      streamSection.style.display = "block";
-      renderStreamList();
+    // Render saved streams
+    function renderStreamList() {
+      streamListEl.innerHTML = "";
+      streams.forEach(stream => {
+        const li = document.createElement("li");
+        li.style.marginBottom = "10px";
+        li.innerHTML = `
+          <strong>Name:</strong> <span class="streamName">${stream.name}</span> 
+          | <strong>Time:</strong> ${stream.timestamp} 
+          <button class="editBtn" style="margin-left:10px;">Edit</button>
+          <button class="deleteBtn" style="margin-left:5px;">Delete</button>
+        `;
+        li.querySelector(".editBtn").onclick = () => {
+          const newName = prompt("Edit stream name:", stream.name);
+          if(newName) { stream.name = newName; localStorage.setItem("streams", JSON.stringify(streams)); renderStreamList(); }
+        };
+        li.querySelector(".deleteBtn").onclick = () => {
+          if(confirm("Delete this stream?")) { streams = streams.filter(s => s.id !== stream.id); localStorage.setItem("streams", JSON.stringify(streams)); renderStreamList(); }
+        };
+        streamListEl.appendChild(li);
+      });
     }
+
+    if(role === "admin") renderStreamList();
+
+    // WebSocket signaling
+    socket.onmessage = async (event) => {
+      const data = JSON.parse(event.data);
+
+      if(data.type === "offer" && role !== "admin") {
+        const pc = new RTCPeerConnection();
+        peers[data.id] = pc;
+        pc.ontrack = e => viewerStream.srcObject = e.streams[0];
+
+        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+
+        socket.send(JSON.stringify({ type: "answer", answer, id: data.id }));
+      }
+
+      if(data.type === "answer" && role === "admin") {
+        const pc = peers[data.id];
+        if(pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+      }
+
+      if(data.type === "candidate") {
+        const pc = peers[data.id];
+        if(pc) pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+      }
+    };
 
     async function startStream() {
       try {
@@ -55,82 +112,45 @@
         liveStream.srcObject = localStream;
 
         // Save stream entry in history
-        const name = prompt("Enter a name for this stream:", "New Stream") || "New Stream";
+        const name = prompt("Enter stream name:", "New Stream") || "New Stream";
         const timestamp = new Date().toLocaleString();
         const streamEntry = { id: Date.now(), name, timestamp };
-        streams.unshift(streamEntry); // newest first
+        streams.unshift(streamEntry);
         localStorage.setItem("streams", JSON.stringify(streams));
         renderStreamList();
+
+        broadcastToViewers();
       } catch(err) {
         alert("Cannot access camera/microphone: " + err);
       }
     }
 
-    function popoutStream() {
-      if(!localStream) {
-        alert("Start the stream first.");
-        return;
-      }
+    async function broadcastToViewers() {
+      const viewerId = Date.now();
+      const pc = new RTCPeerConnection();
+      peers[viewerId] = pc;
 
-      if(popoutWindow && !popoutWindow.closed) {
-        popoutWindow.focus();
-        return;
-      }
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      pc.onicecandidate = e => { if(e.candidate) socket.send(JSON.stringify({ type:"candidate", candidate:e.candidate, id:viewerId })); };
 
-      popoutWindow = window.open("", "PopoutStream", "width=800,height=600");
-      popoutWindow.document.write(`
-        <html>
-        <head>
-          <title>Live Stream</title>
-          <style>
-            body { margin:0; background:#111; display:flex; justify-content:center; align-items:center; height:100vh; }
-            video { width:100%; height:auto; max-width:780px; border-radius:8px; }
-          </style>
-        </head>
-        <body>
-          <video id="popoutVideo" autoplay playsinline></video>
-        </body>
-        </html>
-      `);
-
-      const popoutVideo = popoutWindow.document.getElementById("popoutVideo");
-      popoutVideo.srcObject = localStream;
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.send(JSON.stringify({ type:"offer", offer, id:viewerId }));
     }
 
     startStreamBtn.addEventListener("click", startStream);
-    popoutStreamBtn.addEventListener("click", popoutStream);
 
-    function renderStreamList() {
-      streamListEl.innerHTML = "";
-      streams.forEach(stream => {
-        const li = document.createElement("li");
-        li.innerHTML = `
-          <strong>Name:</strong> <span class="streamName">${stream.name}</span> 
-          | <strong>Time:</strong> ${stream.timestamp} 
-          <button class="editBtn">Edit</button>
-          <button class="deleteBtn">Delete</button>
-        `;
-
-        li.querySelector(".editBtn").addEventListener("click", () => {
-          const newName = prompt("Edit stream name:", stream.name);
-          if(newName) {
-            stream.name = newName;
-            localStorage.setItem("streams", JSON.stringify(streams));
-            renderStreamList();
-          }
-        });
-
-        li.querySelector(".deleteBtn").addEventListener("click", () => {
-          if(confirm("Delete this stream?")) {
-            streams = streams.filter(s => s.id !== stream.id);
-            localStorage.setItem("streams", JSON.stringify(streams));
-            renderStreamList();
-          }
-        });
-
-        streamListEl.appendChild(li);
-      });
-    }
+    popoutStreamBtn.addEventListener("click", () => {
+      if(!localStream) { alert("Start the stream first."); return; }
+      const win = window.open("", "Popout", "width=800,height=600");
+      const video = win.document.createElement("video");
+      video.autoplay = true;
+      video.playsInline = true;
+      video.srcObject = localStream;
+      video.style.width = "100%";
+      video.style.height = "auto";
+      win.document.body.appendChild(video);
+    });
   </script>
 </body>
 </html>
