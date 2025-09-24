@@ -1,22 +1,17 @@
-// Grove Role Selection Logic
-const ADMIN_PASSWORD = "GroveFire";
+const ADMIN_PASSWORD = "GroveFire"; // Grove sacred password
 
-document.getElementById("adminBtn").addEventListener("click", () => {
+const adminBtn = document.getElementById("adminBtn");
+const guestBtn = document.getElementById("guestBtn");
+
+adminBtn.addEventListener("click", () => {
   const pass = prompt("Enter Admin Password:");
-  if(pass === ADMIN_PASSWORD) {
+  if(pass === ADMIN_PASSWORD){
     localStorage.setItem("userRole", "admin");
     window.location.href = "home.html";
-  } else {
-    alert("Incorrect password.");
-  }
+  } else alert("Incorrect password.");
 });
 
-document.getElementById("memberBtn").addEventListener("click", () => {
-  localStorage.setItem("userRole", "member");
-  window.location.href = "home.html";
-});
-
-document.getElementById("guestBtn").addEventListener("click", () => {
+guestBtn.addEventListener("click", () => {
   localStorage.setItem("userRole", "guest");
   window.location.href = "home.html";
 });
