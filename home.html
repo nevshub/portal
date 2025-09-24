@@ -8,6 +8,21 @@
 <body>
   <h1>Welcome to the Home Page</h1>
 
+  <!-- Cover Photo -->
+  <div id="coverContainer">
+    <img id="coverPhoto" src="" alt="Cover Photo" style="width:100%; max-width:800px; height:200px; object-fit:cover;">
+    <input type="file" id="coverInput" style="display:none;">
+    <button id="changeCover" class="button" style="display:none;">Change Cover</button>
+  </div>
+
+  <!-- Profile Photo -->
+  <div id="profileContainer" style="margin-top:20px;">
+    <img id="profilePhoto" src="" alt="Profile Photo" style="width:150px; height:150px; border-radius:50%; object-fit:cover;">
+    <input type="file" id="profileInput" style="display:none;">
+    <button id="changeProfile" class="button" style="display:none;">Change Profile</button>
+  </div>
+
+  <!-- Admin Wall Button (Admin Only) -->
   <div id="adminWallBtnContainer" style="display:none;">
     <a href="adminWall.html" class="button">Admin Wall</a>
   </div>
@@ -17,12 +32,12 @@
   <a href="notes.html" class="button">Notes</a>
   <a href="https://your-grove-link.com" class="button" target="_blank">Visit Grove</a>
 
-  <script>
-    // Determine user role
-    const role = localStorage.getItem("userRole");
-    if (role === "admin") {
-      document.getElementById("adminWallBtnContainer").style.display = "block";
-    }
-  </script>
+  <!-- Streaming -->
+  <div style="margin-top:20px;">
+    <button id="startStreamBtn" class="button" style="display:none;">Start Stream</button>
+    <button id="joinStreamBtn" class="button" style="display:none;">Join Stream</button>
+  </div>
+
+  <script src="profileStream.js"></script>
 </body>
 </html>
