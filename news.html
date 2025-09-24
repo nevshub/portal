@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>News Feed</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>News Feed</h1>
+
+  <!-- Admin / Member Posting Section -->
+  <div id="postSection" style="display:none;">
+    <textarea id="postContent" placeholder="Write your post..." rows="4"></textarea>
+    <input type="file" id="postImage" accept="image/*">
+    <button id="postBtn" class="button">Post</button>
+  </div>
+
+  <!-- Posts Feed -->
+  <div id="feed"></div>
+
+  <a href="home.html" class="button">Back to Home</a>
+
+  <script src="news.js"></script>
+</body>
+</html>
