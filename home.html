@@ -9,13 +9,13 @@
   <h1>Welcome to the Home Page</h1>
 
   <!-- Admin Streaming Section -->
-  <div id="streamSection" style="margin-top:30px; display:none;">
+  <div id="streamSection">
     <h2>Admin Streaming</h2>
     <button id="startStreamBtn" class="button">Start Stream</button>
-    <video id="liveStream" autoplay playsinline style="width:100%; max-width:700px; margin-top:20px; border-radius:8px;"></video>
+    <video id="liveStream" autoplay playsinline></video>
     
     <h3>Stream History</h3>
-    <ul id="streamList" style="list-style:none; padding:0;"></ul>
+    <ul id="streamList"></ul>
   </div>
 
   <script>
@@ -37,61 +37,15 @@
     const streamListEl = document.getElementById("streamList");
 
     let localStream = null;
-    let peers = {};
     let streams = JSON.parse(localStorage.getItem("streams") || "[]");
 
-    // Only show stream controls for admin
+    // Only show for admin
+    if(role !== "admin") streamSection.style.display = "none";
+
     if(role === "admin") {
       streamSection.style.display = "block";
       renderStreamList();
     }
-
-    const socket = new WebSocket("ws://localhost:3000");
-
-    // Handle WebSocket messages
-    socket.onmessage = async (event) => {
-      const data = JSON.parse(event.data);
-
-      // Admin ignores offers
-      if(data.type === "offer" && role === "admin") return;
-
-      // Viewer receives offer from admin
-      if(data.type === "offer" && role !== "admin") {
-        const pc = new RTCPeerConnection();
-        peers[data.id] = pc;
-
-        pc.ontrack = e => {
-          const video = document.createElement("video");
-          video.srcObject = e.streams[0];
-          video.autoplay = true;
-          video.playsInline = true;
-          video.style.width = "100%";
-          video.style.maxWidth = "700px";
-          video.style.borderRadius = "8px";
-          document.body.appendChild(video);
-        };
-
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.send(JSON.stringify({ type: "answer", answer, id: data.id }));
-      }
-
-      // Admin receives answer from viewer
-      if(data.type === "answer" && role === "admin") {
-        const pc = peers[data.id];
-        if(pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-      }
-
-      // ICE candidates
-      if(data.type === "candidate") {
-        const pc = peers[data.id];
-        if(pc) pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-      }
-    };
 
     async function startStream() {
       try {
@@ -102,15 +56,9 @@
         const name = prompt("Enter a name for this stream:", "New Stream") || "New Stream";
         const timestamp = new Date().toLocaleString();
         const streamEntry = { id: Date.now(), name, timestamp };
-        streams.unshift(streamEntry);
+        streams.unshift(streamEntry); // newest first
         localStorage.setItem("streams", JSON.stringify(streams));
         renderStreamList();
-
-        // Broadcast to viewers
-        setTimeout(() => {
-          broadcastToViewers();
-        }, 500);
-
       } catch(err) {
         alert("Cannot access camera/microphone: " + err);
       }
@@ -118,33 +66,18 @@
 
     startStreamBtn.addEventListener("click", startStream);
 
-    async function broadcastToViewers() {
-      const viewerId = Date.now();
-      peers[viewerId] = new RTCPeerConnection();
-
-      localStream.getTracks().forEach(track => peers[viewerId].addTrack(track, localStream));
-
-      peers[viewerId].onicecandidate = event => {
-        if(event.candidate) socket.send(JSON.stringify({ type: "candidate", candidate: event.candidate, id: viewerId }));
-      };
-
-      const offer = await peers[viewerId].createOffer();
-      await peers[viewerId].setLocalDescription(offer);
-      socket.send(JSON.stringify({ type: "offer", offer, id: viewerId }));
-    }
-
     function renderStreamList() {
       streamListEl.innerHTML = "";
       streams.forEach(stream => {
         const li = document.createElement("li");
-        li.style.marginBottom = "10px";
         li.innerHTML = `
           <strong>Name:</strong> <span class="streamName">${stream.name}</span> 
           | <strong>Time:</strong> ${stream.timestamp} 
-          <button class="editBtn" style="margin-left:10px;">Edit</button>
-          <button class="deleteBtn" style="margin-left:5px;">Delete</button>
+          <button class="editBtn">Edit</button>
+          <button class="deleteBtn">Delete</button>
         `;
 
+        // Edit stream name
         li.querySelector(".editBtn").addEventListener("click", () => {
           const newName = prompt("Edit stream name:", stream.name);
           if(newName) {
@@ -154,6 +87,7 @@
           }
         });
 
+        // Delete stream
         li.querySelector(".deleteBtn").addEventListener("click", () => {
           if(confirm("Delete this stream?")) {
             streams = streams.filter(s => s.id !== stream.id);
