@@ -1,0 +1,35 @@
+<h2>Live Stream</h2>
+<div id="streamContainer"></div>
+
+<script>
+const socket = new WebSocket("ws://localhost:3000");
+let pc = null;
+const viewerId = Date.now();
+
+socket.onmessage = async (event) => {
+  const data = JSON.parse(event.data);
+
+  if(data.type === "offer") {
+    pc = new RTCPeerConnection();
+    pc.ontrack = e => {
+      const video = document.createElement("video");
+      video.srcObject = e.streams[0];
+      video.autoplay = true;
+      video.playsInline = true;
+      video.style.width = "100%";
+      video.style.maxWidth = "700px";
+      video.style.borderRadius = "8px";
+      document.getElementById("streamContainer").appendChild(video);
+    };
+
+    await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.send(JSON.stringify({ type: "answer", answer, id: viewerId }));
+  }
+
+  if(data.type === "candidate" && pc) {
+    pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+  }
+};
+</script>
