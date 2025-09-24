@@ -14,12 +14,12 @@
     <button id="startStreamBtn" class="button">Start Stream</button>
     <button id="popoutStreamBtn" class="button">Popout Stream</button>
     <video id="liveStream" autoplay playsinline style="width:100%; max-width:700px; margin-top:20px; border-radius:8px;"></video>
-    
+
     <h3>Stream History</h3>
     <ul id="streamList" style="list-style:none; padding:0;"></ul>
   </div>
 
-  <!-- Guest View Section -->
+  <!-- Guest Viewer Section -->
   <div id="viewerSection" style="margin-top:30px; display:none;">
     <h2>Live Stream</h2>
     <video id="viewerStream" autoplay playsinline style="width:100%; max-width:700px; margin-top:20px; border-radius:8px;"></video>
@@ -47,14 +47,12 @@
     const streamListEl = document.getElementById("streamList");
 
     if(role === "admin") streamSection.style.display = "block";
-    else if(role === "guest" || role === "member") viewerSection.style.display = "block";
+    else viewerSection.style.display = "block";
 
     let localStream = null;
-    let peers = {};
-    const socket = new WebSocket("ws://localhost:3000"); // signaling server
+    let peers = {}; // key: viewerId, value: RTCPeerConnection
     let streams = JSON.parse(localStorage.getItem("streams") || "[]");
 
-    // Render saved streams
     function renderStreamList() {
       streamListEl.innerHTML = "";
       streams.forEach(stream => {
@@ -79,23 +77,29 @@
 
     if(role === "admin") renderStreamList();
 
-    // WebSocket signaling
+    // WebSocket signaling server
+    const socket = new WebSocket("ws://localhost:3000"); // replace with real server
+
+    socket.onopen = () => console.log("Connected to signaling server");
     socket.onmessage = async (event) => {
       const data = JSON.parse(event.data);
 
-      if(data.type === "offer" && role !== "admin") {
+      if(role !== "admin" && data.type === "offer") {
         const pc = new RTCPeerConnection();
         peers[data.id] = pc;
-        pc.ontrack = e => viewerStream.srcObject = e.streams[0];
+
+        pc.ontrack = e => { viewerStream.srcObject = e.streams[0]; };
+        pc.onicecandidate = e => {
+          if(e.candidate) socket.send(JSON.stringify({ type:"candidate", candidate:e.candidate, id:data.id }));
+        };
 
         await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-
-        socket.send(JSON.stringify({ type: "answer", answer, id: data.id }));
+        socket.send(JSON.stringify({ type:"answer", answer, id:data.id }));
       }
 
-      if(data.type === "answer" && role === "admin") {
+      if(role === "admin" && data.type === "answer") {
         const pc = peers[data.id];
         if(pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
       }
@@ -111,7 +115,6 @@
         localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
         liveStream.srcObject = localStream;
 
-        // Save stream entry in history
         const name = prompt("Enter stream name:", "New Stream") || "New Stream";
         const timestamp = new Date().toLocaleString();
         const streamEntry = { id: Date.now(), name, timestamp };
@@ -119,23 +122,27 @@
         localStorage.setItem("streams", JSON.stringify(streams));
         renderStreamList();
 
-        broadcastToViewers();
+        broadcastToAllViewers();
       } catch(err) {
         alert("Cannot access camera/microphone: " + err);
       }
     }
 
-    async function broadcastToViewers() {
-      const viewerId = Date.now();
+    function broadcastToAllViewers() {
+      const viewerId = Date.now(); // unique ID for this session
       const pc = new RTCPeerConnection();
       peers[viewerId] = pc;
 
       localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      pc.onicecandidate = e => { if(e.candidate) socket.send(JSON.stringify({ type:"candidate", candidate:e.candidate, id:viewerId })); };
+      pc.onicecandidate = e => {
+        if(e.candidate) socket.send(JSON.stringify({ type:"candidate", candidate:e.candidate, id:viewerId }));
+      };
 
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      socket.send(JSON.stringify({ type:"offer", offer, id:viewerId }));
+      pc.createOffer().then(offer => {
+        pc.setLocalDescription(offer).then(() => {
+          socket.send(JSON.stringify({ type:"offer", offer, id:viewerId }));
+        });
+      });
     }
 
     startStreamBtn.addEventListener("click", startStream);
