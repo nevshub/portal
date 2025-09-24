@@ -12,17 +12,10 @@
   <div id="streamSection" style="margin-top:30px; display:none;">
     <h2>Admin Streaming</h2>
     <button id="startStreamBtn" class="button">Start Stream</button>
-    <button id="popoutStreamBtn" class="button">Popout Stream</button>
     <video id="liveStream" autoplay playsinline style="width:100%; max-width:700px; margin-top:20px; border-radius:8px;"></video>
-
+    
     <h3>Stream History</h3>
     <ul id="streamList" style="list-style:none; padding:0;"></ul>
-  </div>
-
-  <!-- Guest Viewer Section -->
-  <div id="viewerSection" style="margin-top:30px; display:none;">
-    <h2>Live Stream</h2>
-    <video id="viewerStream" autoplay playsinline style="width:100%; max-width:700px; margin-top:20px; border-radius:8px;"></video>
   </div>
 
   <script>
@@ -39,19 +32,37 @@
     }
 
     const streamSection = document.getElementById("streamSection");
-    const viewerSection = document.getElementById("viewerSection");
     const startStreamBtn = document.getElementById("startStreamBtn");
-    const popoutStreamBtn = document.getElementById("popoutStreamBtn");
     const liveStream = document.getElementById("liveStream");
-    const viewerStream = document.getElementById("viewerStream");
     const streamListEl = document.getElementById("streamList");
 
-    if(role === "admin") streamSection.style.display = "block";
-    else viewerSection.style.display = "block";
-
     let localStream = null;
-    let peers = {}; // key: viewerId, value: RTCPeerConnection
     let streams = JSON.parse(localStorage.getItem("streams") || "[]");
+
+    // Only show for admin
+    if(role === "admin") {
+      streamSection.style.display = "block";
+      renderStreamList();
+    }
+
+    async function startStream() {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
+        liveStream.srcObject = localStream;
+
+        // Save stream entry in history
+        const name = prompt("Enter a name for this stream:", "New Stream") || "New Stream";
+        const timestamp = new Date().toLocaleString();
+        const streamEntry = { id: Date.now(), name, timestamp };
+        streams.unshift(streamEntry); // newest first
+        localStorage.setItem("streams", JSON.stringify(streams));
+        renderStreamList();
+      } catch(err) {
+        alert("Cannot access camera/microphone: " + err);
+      }
+    }
+
+    startStreamBtn.addEventListener("click", startStream);
 
     function renderStreamList() {
       streamListEl.innerHTML = "";
@@ -64,100 +75,29 @@
           <button class="editBtn" style="margin-left:10px;">Edit</button>
           <button class="deleteBtn" style="margin-left:5px;">Delete</button>
         `;
-        li.querySelector(".editBtn").onclick = () => {
+
+        // Edit stream name
+        li.querySelector(".editBtn").addEventListener("click", () => {
           const newName = prompt("Edit stream name:", stream.name);
-          if(newName) { stream.name = newName; localStorage.setItem("streams", JSON.stringify(streams)); renderStreamList(); }
-        };
-        li.querySelector(".deleteBtn").onclick = () => {
-          if(confirm("Delete this stream?")) { streams = streams.filter(s => s.id !== stream.id); localStorage.setItem("streams", JSON.stringify(streams)); renderStreamList(); }
-        };
+          if(newName) {
+            stream.name = newName;
+            localStorage.setItem("streams", JSON.stringify(streams));
+            renderStreamList();
+          }
+        });
+
+        // Delete stream
+        li.querySelector(".deleteBtn").addEventListener("click", () => {
+          if(confirm("Delete this stream?")) {
+            streams = streams.filter(s => s.id !== stream.id);
+            localStorage.setItem("streams", JSON.stringify(streams));
+            renderStreamList();
+          }
+        });
+
         streamListEl.appendChild(li);
       });
     }
-
-    if(role === "admin") renderStreamList();
-
-    // WebSocket signaling server
-    const socket = new WebSocket("ws://localhost:3000"); // replace with real server
-
-    socket.onopen = () => console.log("Connected to signaling server");
-    socket.onmessage = async (event) => {
-      const data = JSON.parse(event.data);
-
-      if(role !== "admin" && data.type === "offer") {
-        const pc = new RTCPeerConnection();
-        peers[data.id] = pc;
-
-        pc.ontrack = e => { viewerStream.srcObject = e.streams[0]; };
-        pc.onicecandidate = e => {
-          if(e.candidate) socket.send(JSON.stringify({ type:"candidate", candidate:e.candidate, id:data.id }));
-        };
-
-        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.send(JSON.stringify({ type:"answer", answer, id:data.id }));
-      }
-
-      if(role === "admin" && data.type === "answer") {
-        const pc = peers[data.id];
-        if(pc) await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-      }
-
-      if(data.type === "candidate") {
-        const pc = peers[data.id];
-        if(pc) pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-      }
-    };
-
-    async function startStream() {
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video:true, audio:true });
-        liveStream.srcObject = localStream;
-
-        const name = prompt("Enter stream name:", "New Stream") || "New Stream";
-        const timestamp = new Date().toLocaleString();
-        const streamEntry = { id: Date.now(), name, timestamp };
-        streams.unshift(streamEntry);
-        localStorage.setItem("streams", JSON.stringify(streams));
-        renderStreamList();
-
-        broadcastToAllViewers();
-      } catch(err) {
-        alert("Cannot access camera/microphone: " + err);
-      }
-    }
-
-    function broadcastToAllViewers() {
-      const viewerId = Date.now(); // unique ID for this session
-      const pc = new RTCPeerConnection();
-      peers[viewerId] = pc;
-
-      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-      pc.onicecandidate = e => {
-        if(e.candidate) socket.send(JSON.stringify({ type:"candidate", candidate:e.candidate, id:viewerId }));
-      };
-
-      pc.createOffer().then(offer => {
-        pc.setLocalDescription(offer).then(() => {
-          socket.send(JSON.stringify({ type:"offer", offer, id:viewerId }));
-        });
-      });
-    }
-
-    startStreamBtn.addEventListener("click", startStream);
-
-    popoutStreamBtn.addEventListener("click", () => {
-      if(!localStream) { alert("Start the stream first."); return; }
-      const win = window.open("", "Popout", "width=800,height=600");
-      const video = win.document.createElement("video");
-      video.autoplay = true;
-      video.playsInline = true;
-      video.srcObject = localStream;
-      video.style.width = "100%";
-      video.style.height = "auto";
-      win.document.body.appendChild(video);
-    });
   </script>
 </body>
 </html>
